@@ -19,10 +19,10 @@ name: Scheduled job crawl
 
 on:
   schedule:
-    # 3 runs/day at 6am, 11am, 3pm Eastern (job postings appear during US
-    # business hours). GitHub cron is UTC: these times assume EDT (UTC-4);
-    # during EST (winter) runs land an hour earlier in local time.
-    - cron: "0 10,15,19 * * *"
+    # 4 runs/day at 6am, 9am, 12pm, 3pm Eastern — covers the East- and
+    # West-coast posting waves. Cron is UTC (EDT = UTC-4); during EST
+    # (winter) runs land an hour earlier in local time.
+    - cron: "0 10,13,16,19 * * *"
   workflow_dispatch: {}      # manual trigger from the Actions tab
 
 concurrency:
