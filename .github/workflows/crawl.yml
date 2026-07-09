@@ -1,0 +1,137 @@
+# Scheduled job crawl — replaces the Windows Task Scheduler dependency on a
+# single PC. run.bat remains as a manual/local fallback.
+#
+# Layout:
+#   1. `sources` job fetches every source list ONCE (sequential, retried) and
+#      publishes it as an artifact. Five parallel jobs hitting the sources API
+#      at the same instant tripped Hostinger's WAF into intermittent 403s.
+#   2. Spider matrix jobs read sources from the artifact (SOURCES_FILE) and
+#      crawl in parallel — total wall time ≈ the slowest spider (workday).
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#   INGEST_URL    = https://latentra-technologies.com/api/jobs-ingest.php
+#   SOURCES_URL   = https://latentra-technologies.com/api/jobs-sources.php
+#   INGEST_TOKEN  = the ingest bearer token
+#
+# NOTE: scheduled workflows only run from the DEFAULT branch (main).
+
+name: Scheduled job crawl
+
+on:
+  schedule:
+    # 3 runs/day at 6am, 11am, 3pm Eastern (job postings appear during US
+    # business hours). GitHub cron is UTC: these times assume EDT (UTC-4);
+    # during EST (winter) runs land an hour earlier in local time.
+    - cron: "0 10,15,19 * * *"
+  workflow_dispatch: {}      # manual trigger from the Actions tab
+
+concurrency:
+  group: crawl
+  cancel-in-progress: false
+
+jobs:
+  sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: scraper
+    env:
+      SOURCES_URL: ${{ secrets.SOURCES_URL }}
+      INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Last-known-good fallback: if Hostinger's WAF blocks the runner for the
+      # whole retry window (seen twice on 2026-07-07), crawl with the cached
+      # source list instead of failing. Sources change weekly at most; job
+      # data is always fetched fresh from the ATS APIs regardless.
+      - name: Restore last-known-good sources
+        uses: actions/cache@v4
+        with:
+          path: scraper/sources-cache.json
+          key: sources-cache-${{ github.run_id }}
+          restore-keys: |
+            sources-cache-
+
+      - name: Fetch all source lists
+        run: |
+          if python fetch_sources.py sources.json; then
+            cp sources.json sources-cache.json
+          elif [ -f sources-cache.json ]; then
+            echo "::warning::sources API blocked — crawling with last-known-good cached sources"
+            cp sources-cache.json sources.json
+          else
+            echo "::warning::sources API blocked and no cache yet — using committed sources-fallback.json"
+            cp sources-fallback.json sources.json
+            cp sources.json sources-cache.json
+          fi
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: sources
+          path: scraper/sources.json
+          retention-days: 2
+
+  crawl:
+    name: crawl ${{ matrix.spider }}
+    needs: sources
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        spider: [greenhouse, lever, ashby, smartrecruiters, workday]
+    defaults:
+      run:
+        working-directory: scraper
+    env:
+      INGEST_URL: ${{ secrets.INGEST_URL }}
+      INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - uses: actions/download-artifact@v5
+        with:
+          name: sources
+          path: scraper
+
+      - name: Crawl ${{ matrix.spider }}
+        env:
+          SOURCES_FILE: sources.json
+        run: |
+          set -o pipefail
+          python -m scrapy crawl ${{ matrix.spider }} 2>&1 | tee crawl.log
+          # The loader must have RUN (it logs "Loaded N active" even for N=0).
+          # Zero configured sources is a legitimate no-op (e.g. smartrecruiters
+          # currently has none); the loader never logging at all means the
+          # sources file/API was unreachable — that fails loudly.
+          if ! grep -qE "Loaded [0-9]+ active" crawl.log; then
+            echo "::error::sources never loaded for ${{ matrix.spider }} — crawl was a broken no-op"
+            exit 1
+          fi
+          # Ingest batches that never made it to the server are lost data.
+          # Exact token, emitted only on permanent loss — fuzzy phrases once
+          # false-alarmed on a server error echoed inside a retry warning.
+          if grep -q "INGEST_BATCH_LOST" crawl.log; then
+            echo "::error::one or more ingest batches were lost for ${{ matrix.spider }}"
+            exit 1
+          fi

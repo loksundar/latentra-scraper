@@ -1,0 +1,17 @@
+{
+  "total": 22,
+  "jobPostings": [
+    {
+      "title": "Data Engineer",
+      "externalPath": "/en-US/careers/job/New-York/Data-Engineer_JR100",
+      "locationsText": "New York",
+      "bulletFields": ["JR100"]
+    },
+    {
+      "title": "Site Reliability Engineer",
+      "externalPath": "/job/Austin/Site-Reliability-Engineer_JR200",
+      "locationsText": "Austin",
+      "bulletFields": ["JR200"]
+    }
+  ]
+}

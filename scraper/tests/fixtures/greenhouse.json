@@ -1,0 +1,22 @@
+{
+  "jobs": [
+    {
+      "id": 4011001,
+      "title": "Senior Backend Engineer",
+      "updated_at": "2026-06-20T12:34:56-04:00",
+      "location": {"name": "New York, NY"},
+      "absolute_url": "https://boards.greenhouse.io/acme/jobs/4011001",
+      "content": "&lt;p&gt;Build APIs with Python and Postgres.&lt;/p&gt;",
+      "departments": [{"id": 1, "name": "Engineering"}, {"id": 2, "name": "Platform"}]
+    },
+    {
+      "id": 4011002,
+      "title": "Machine Learning Intern",
+      "updated_at": "2026-06-25T09:00:00-04:00",
+      "location": "Remote - US",
+      "absolute_url": "https://boards.greenhouse.io/acme/jobs/4011002",
+      "content": "<p>ML internship on the recommendations team.</p>",
+      "departments": []
+    }
+  ]
+}

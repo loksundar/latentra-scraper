@@ -1,0 +1,23 @@
+# Sample careers page URLs for discovery
+# One URL per line, comments start with #
+
+# Greenhouse
+https://boards.greenhouse.io/reddit
+https://boards.greenhouse.io/doordash
+https://boards.greenhouse.io/gusto
+https://boards.greenhouse.io/coinbase
+https://boards.greenhouse.io/robinhood
+https://boards.greenhouse.io/instacart
+
+# Lever
+https://jobs.lever.co/taskhuman
+https://jobs.lever.co/taxbit
+
+# Ashby
+https://jobs.ashbyhq.com/anthropic
+https://jobs.ashbyhq.com/cursor
+https://jobs.ashbyhq.com/perplexityai
+
+# Workday
+https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite
+https://motorolasolutions.wd5.myworkdayjobs.com/Careers

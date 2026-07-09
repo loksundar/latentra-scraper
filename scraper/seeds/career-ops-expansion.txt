@@ -1,0 +1,58 @@
+# Career-ops expansion — company careers URLs for validation
+# Run: python -m latentra_scraper.discovery.seeder seeds/career-ops-expansion.txt --validate --dry-run
+
+# AI Labs
+https://boards-api.greenhouse.io/v1/boards/anthropic/jobs
+https://jobs.ashbyhq.com/cohere
+https://jobs.ashbyhq.com/pinecone
+https://boards.greenhouse.io/scaleai
+https://jobs.lever.co/mistral
+
+# Voice AI
+https://jobs.ashbyhq.com/elevenlabs
+https://jobs.ashbyhq.com/deepgram
+https://boards-api.greenhouse.io/v1/boards/humeai/jobs
+https://boards-api.greenhouse.io/v1/boards/polyai/jobs
+https://jobs.ashbyhq.com/vapi
+
+# Platforms
+https://boards-api.greenhouse.io/v1/boards/vercel/jobs
+https://boards-api.greenhouse.io/v1/boards/temporal/jobs
+https://boards-api.greenhouse.io/v1/boards/gleanwork/jobs
+https://boards-api.greenhouse.io/v1/boards/arizeai/jobs
+https://boards-api.greenhouse.io/v1/boards/runpod/jobs
+https://boards.greenhouse.io/reddit
+https://boards.greenhouse.io/doordash
+https://boards.greenhouse.io/gusto
+https://boards.greenhouse.io/instacart
+https://boards.greenhouse.io/attentive
+https://boards.greenhouse.io/klaviyo
+
+# Developer Tools
+https://jobs.ashbyhq.com/langchain
+https://boards.greenhouse.io/cursor
+https://boards.greenhouse.io/replit
+
+# Automation
+https://jobs.ashbyhq.com/n8n
+https://jobs.ashbyhq.com/zapier
+
+# LLMOps
+https://jobs.ashbyhq.com/lindy
+https://boards-api.greenhouse.io/v1/boards/speechmatics/jobs
+
+# Contact Center AI
+https://boards.greenhouse.io/ada
+https://jobs.ashbyhq.com/sierra
+https://jobs.ashbyhq.com/decagon
+https://boards-api.greenhouse.io/v1/boards/intercom/jobs
+
+# Fintech
+https://boards.greenhouse.io/coinbase
+https://boards.greenhouse.io/robinhood
+
+# Security
+https://boards.greenhouse.io/verkada
+
+# Enterprise
+https://boards.greenhouse.io/spacex

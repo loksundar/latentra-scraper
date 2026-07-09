@@ -1,0 +1,14 @@
+# Secrets — set via GitHub Actions secrets, never commit
+.env
+.env.*
+!.env.example
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+
+# Local outputs
+scraper/output/
+scraper/logs/
+scraper/sources.json
+scraper/sources-cache.json

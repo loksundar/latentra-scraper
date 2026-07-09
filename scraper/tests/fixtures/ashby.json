@@ -1,0 +1,24 @@
+{
+  "apiVersion": "1",
+  "jobs": [
+    {
+      "id": "a1b2c3",
+      "title": "Platform Engineer",
+      "isListed": true,
+      "isRemote": true,
+      "workplaceType": "Remote",
+      "employmentType": "FullTime",
+      "location": "San Francisco",
+      "department": "Infrastructure",
+      "publishedAt": "2026-06-01T00:00:00.000Z",
+      "descriptionHtml": "<p>Kubernetes, Terraform, AWS.</p>",
+      "applyUrl": "https://jobs.ashbyhq.com/acme/a1b2c3/application",
+      "jobUrl": "https://jobs.ashbyhq.com/acme/a1b2c3"
+    },
+    {
+      "id": "hidden-1",
+      "title": "Unlisted Role",
+      "isListed": false
+    }
+  ]
+}

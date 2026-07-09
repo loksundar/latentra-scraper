@@ -1,0 +1,17 @@
+[
+  {
+    "name": "SimplifyJobs New Grad",
+    "url": "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/README.md",
+    "origin": "github-simplify-newgrad"
+  },
+  {
+    "name": "SimplifyJobs Summer Internships",
+    "url": "https://raw.githubusercontent.com/SimplifyJobs/Summer2025-Internships/dev/README.md",
+    "origin": "github-simplify-intern"
+  },
+  {
+    "name": "pittcsc New Grad",
+    "url": "https://raw.githubusercontent.com/pittcsc/NewGrad-2025/dev/README.md",
+    "origin": "github-pittcsc-newgrad"
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "jobPostingInfo": {
+    "jobReqId": "JR100",
+    "title": "Data Engineer",
+    "location": "New York",
+    "timeType": "Full time",
+    "jobDescription": "<p>Build ETL pipelines with Spark and Airflow.</p>",
+    "postedOn": "Posted 3 Days Ago"
+  },
+  "jobFamilyGroup": ["Data & Analytics"]
+}

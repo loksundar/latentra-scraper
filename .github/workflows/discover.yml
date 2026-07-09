@@ -1,0 +1,36 @@
+# Weekly source discovery — replaces the LatentraDiscovery-Weekly Windows task.
+# Fetches GitHub job lists, classifies/validates ATS URLs, and submits new
+# sources to the discovery API (URL derived from INGEST_URL).
+
+name: Weekly source discovery
+
+on:
+  schedule:
+    - cron: "0 7 * * 1"   # Mondays 07:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: scraper
+    env:
+      INGEST_URL: ${{ secrets.INGEST_URL }}
+      SOURCES_URL: ${{ secrets.SOURCES_URL }}
+      INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run discovery
+        run: python discover.py --activate
