@@ -86,7 +86,7 @@ jobs:
     name: crawl ${{ matrix.spider }}
     needs: sources
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
@@ -119,7 +119,7 @@ jobs:
           SOURCES_FILE: sources.json
         run: |
           set -o pipefail
-          python -m scrapy crawl ${{ matrix.spider }} 2>&1 | tee crawl.log
+          timeout -k 60 3600 python -m scrapy crawl ${{ matrix.spider }} 2>&1 | tee crawl.log
           # The loader must have RUN (it logs "Loaded N active" even for N=0).
           # Zero configured sources is a legitimate no-op (e.g. smartrecruiters
           # currently has none); the loader never logging at all means the

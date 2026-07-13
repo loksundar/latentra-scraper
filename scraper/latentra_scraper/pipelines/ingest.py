@@ -37,7 +37,15 @@ DEAD_CODES = (404, 410)
 INGEST_RETRIES = 4
 INGEST_BACKOFF_SECONDS = 45          # 45, 90, 135s between attempts
 INGEST_COOLDOWN_SECONDS = 180        # pause before the second-chance pass
-INGEST_RETRY_CODES = (403, 429, 500, 502, 503, 504)
+# 405/408 included: Hostinger's edge intermittently answers POSTs with an
+# HTML 405 page (seen 2026-07-13) — transient, not a real method error.
+INGEST_RETRY_CODES = (403, 405, 408, 429, 500, 502, 503, 504)
+
+# Hard deadline for a batch's URL validation. Per-request timeouts don't
+# bound "tarpit" servers that drip bytes slowly; one such URL held a
+# non-daemon thread open and hung the whole process for 2.5h (job killed
+# by the workflow timeout). Stragglers are marked unknown (kept alive).
+VALIDATION_DEADLINE_SECONDS = 300
 
 
 def _check_url(url: str):
@@ -104,14 +112,26 @@ class IngestPipeline:
         """Validate every job's apply_url in parallel. Returns (alive, dead_ids)."""
         urls = [(j.get("source_job_id"), j.get("apply_url", "")) for j in jobs]
         statuses = {}
-        with concurrent.futures.ThreadPoolExecutor(max_workers=VALIDATION_WORKERS) as pool:
-            future_map = {pool.submit(_check_url, url): sjid for sjid, url in urls}
-            for fut in concurrent.futures.as_completed(future_map):
+        pool = concurrent.futures.ThreadPoolExecutor(max_workers=VALIDATION_WORKERS)
+        future_map = {pool.submit(_check_url, url): sjid for sjid, url in urls}
+        try:
+            for fut in concurrent.futures.as_completed(
+                future_map, timeout=VALIDATION_DEADLINE_SECONDS
+            ):
                 sjid = future_map[fut]
                 try:
                     statuses[sjid] = fut.result()
                 except Exception:
                     statuses[sjid] = "unknown"
+        except concurrent.futures.TimeoutError:
+            unresolved = sum(1 for f in future_map if not f.done())
+            spider.logger.warning(
+                f"[{company_slug}] URL validation deadline hit — "
+                f"{unresolved} URL(s) unresolved, keeping them alive"
+            )
+        finally:
+            # Don't join threads: a tarpit URL can hold one open for hours.
+            pool.shutdown(wait=False, cancel_futures=True)
 
         alive, dead_ids = [], []
         for j in jobs:
