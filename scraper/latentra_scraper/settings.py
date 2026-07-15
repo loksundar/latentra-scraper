@@ -39,6 +39,15 @@ ITEM_PIPELINES = {
     "latentra_scraper.pipelines.JsonExportPipeline": 900,
 }
 
+# ── Watchdog: force-close a stalled crawl ───────────
+# Runner→ATS network stalls can freeze the engine mid-crawl in ways that
+# per-request timeouts miss (stuck DNS / dead sockets) — seen 2026-07-14:
+# spiders silent for an hour until the OS kill. This reactor timer closes
+# the spider gracefully after 45 min, so close_spider still runs and
+# everything crawled so far still ingests. The workflow's 60-min OS kill
+# remains as the last resort.
+CLOSESPIDER_TIMEOUT = 2700
+
 LOG_LEVEL = "INFO"
 
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
