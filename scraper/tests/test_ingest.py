@@ -125,6 +125,40 @@ def test_send_batch_single_job_403_is_lost_not_split(monkeypatch):
     assert len(calls) == 2  # no infinite recursion on a 1-job batch
 
 
+def test_circuit_breaker_stops_split_storm(monkeypatch):
+    """When the runner IP is wholesale-blocked (every request 403s), the
+    breaker must open after WAF_BLOCK_THRESHOLD lost batches: later batches
+    get a single attempt and are never split — no exponential retry storm."""
+    p = make_pipeline()
+    spider = make_spider()
+
+    # Batch 1: 403s at full depth — full grind is allowed (2 tries, split
+    # once and twice, each leaf 2 tries... bounded by MAX_SPLIT_DEPTH).
+    calls = patch_post(monkeypatch, [FakeResp(403)] * 100)
+    ok, *_ = p._send_batch(spider, "c1", make_payload(4))
+    assert ok is False
+    first_batch_calls = len(calls)
+
+    # Batch 2: same — after this, threshold (2) is reached.
+    del calls[:]
+    ok, *_ = p._send_batch(spider, "c2", make_payload(4))
+    assert ok is False
+    assert p._waf_blocked()
+
+    # Batch 3: breaker open — exactly ONE attempt, no splitting.
+    del calls[:]
+    ok, *_ = p._send_batch(spider, "c3", make_payload(50))
+    assert ok is False
+    assert len(calls) == 1
+
+    # A success closes the breaker again.
+    patch_post(monkeypatch, [FakeResp(200)])
+    ok, *_ = p._send_batch(spider, "c4", make_payload(2))
+    assert ok is True
+    assert not p._waf_blocked()
+    assert first_batch_calls <= 14  # depth-capped: no exponential growth
+
+
 def test_lost_batch_token_matches_ci_grep():
     """The CI workflow greps for the exact INGEST_BATCH_LOST token; make sure
     the pipeline emits it and the workflow still looks for it."""

@@ -47,6 +47,11 @@ INGEST_RETRY_CODES = (403, 405, 408, 429, 500, 502, 503, 504)
 # by the workflow timeout). Stragglers are marked unknown (kept alive).
 VALIDATION_DEADLINE_SECONDS = 300
 
+# WAF-storm bounds (see _send_batch): cap recursive splitting and open a
+# circuit breaker when the runner IP looks wholesale-blocked.
+MAX_SPLIT_DEPTH = 2
+WAF_BLOCK_THRESHOLD = 2
+
 
 def _check_url(url: str):
     """Return 'alive', 'dead', or 'unknown' for a single URL."""
@@ -85,6 +90,7 @@ class IngestPipeline:
     def __init__(self):
         self.batches = {}  # (source, company_slug) -> list of job dicts
         self.gzip_enabled = True  # flips off for the run if server can't decode
+        self.consecutive_403_losses = 0  # WAF circuit breaker state
 
     def open_spider(self, spider):
         load_dotenv()
@@ -209,25 +215,32 @@ class IngestPipeline:
             f"{total_deleted} deleted"
         )
 
-    def _send_batch(self, spider, company_slug, payload):
+    def _send_batch(self, spider, company_slug, payload, depth=0):
         """Send one company batch, splitting in half on a persistent 403.
 
-        Hostinger's ModSecurity anomaly-scores request bodies: enough
-        HTML-rich job descriptions in one payload cross the block threshold
-        even though each half passes (observed on ashby/parallel). Gzip
-        (in _post_batch) avoids scanning entirely once the server decodes
-        it; splitting is the fallback that works against any WAF behavior.
+        Splitting exists for ModSecurity's content anomaly scoring (enough
+        HTML-rich descriptions in one body cross the block threshold even
+        though each half passes). But when the WAF blocks the runner's IP
+        WHOLESALE, every request 403s and recursive splitting becomes an
+        exponential retry storm (seen 2026-07-15: one company burned an
+        hour). Two bounds prevent that:
+          - depth cap: split at most twice (batch → halves → quarters)
+          - circuit breaker: after WAF_BLOCK_THRESHOLD consecutive
+            403-exhausted batches, the run is treated as IP-blocked —
+            single attempt per batch, no splitting, no long backoffs.
 
-        Returns (ok, inserted, updated, deleted). ok=False means some jobs
-        were retryably lost (caller may defer/retry the payload).
+        Returns (ok, inserted, updated, deleted). ok=False means the batch
+        wasn't ingested (caller may defer/retry the payload).
         """
-        data, status = self._post_batch(spider, company_slug, payload)
+        retries = 1 if self._waf_blocked() else INGEST_RETRIES
+        data, status = self._post_batch(spider, company_slug, payload, retries)
         if data is not None:
+            self.consecutive_403_losses = 0
             ins, upd, deleted = self._tally(spider, company_slug, payload, data)
             return True, ins, upd, deleted
 
         jobs = payload["jobs"]
-        if status == 403 and len(jobs) > 1:
+        if status == 403 and len(jobs) > 1 and depth < MAX_SPLIT_DEPTH and not self._waf_blocked():
             mid = len(jobs) // 2
             spider.logger.warning(
                 f"[{company_slug}] WAF rejected batch of {len(jobs)} jobs — "
@@ -241,13 +254,31 @@ class IngestPipeline:
             # so they aren't double-processed server-side.
             second = dict(payload, jobs=jobs[mid:], partial=1, dead_source_job_ids=[],
                           validation_failures=0, validation_warnings=0)
-            ok1, i1, u1, d1 = self._send_batch(spider, company_slug, first)
-            ok2, i2, u2, d2 = self._send_batch(spider, company_slug, second)
-            return ok1 and ok2, i1 + i2, u1 + u2, d1 + d2
+            ok1, i1, u1, d1 = self._send_batch(spider, company_slug, first, depth + 1)
+            ok2, i2, u2, d2 = self._send_batch(spider, company_slug, second, depth + 1)
+            ok = ok1 and ok2
+            if depth == 0 and not ok:
+                self._note_403_loss(spider)
+            return ok, i1 + i2, u1 + u2, d1 + d2
 
+        if status == 403 and depth == 0:
+            self._note_403_loss(spider)
         return False, 0, 0, 0
 
-    def _post_batch(self, spider, company_slug, payload):
+    def _note_403_loss(self, spider):
+        """Count a top-level batch lost to 403s; open the breaker at threshold."""
+        self.consecutive_403_losses += 1
+        if self.consecutive_403_losses == WAF_BLOCK_THRESHOLD:
+            spider.logger.warning(
+                f"WAF circuit breaker OPEN after {self.consecutive_403_losses} "
+                f"consecutive 403 batches — IP looks blocked; remaining batches "
+                f"get a single attempt each"
+            )
+
+    def _waf_blocked(self):
+        return self.consecutive_403_losses >= WAF_BLOCK_THRESHOLD
+
+    def _post_batch(self, spider, company_slug, payload, retries=INGEST_RETRIES):
         """POST one company batch with retries, gzip-compressed.
 
         Falls back to an uncompressed body if the server doesn't decode gzip
@@ -256,7 +287,7 @@ class IngestPipeline:
         """
         body = json.dumps(payload).encode("utf-8")
         last_status = None
-        for attempt in range(1, INGEST_RETRIES + 1):
+        for attempt in range(1, retries + 1):
             headers = {
                 "Authorization": f"Bearer {self.ingest_token}",
                 "Content-Type": "application/json",
@@ -281,7 +312,7 @@ class IngestPipeline:
                     self.gzip_enabled = False
                     continue
                 spider.logger.warning(
-                    f"[{company_slug}] Ingest attempt {attempt}/{INGEST_RETRIES} "
+                    f"[{company_slug}] Ingest attempt {attempt}/{retries} "
                     f"got HTTP {resp.status_code}: {resp.text[:200]}"
                 )
                 if resp.status_code not in INGEST_RETRY_CODES:
@@ -292,9 +323,9 @@ class IngestPipeline:
                     return None, 403
             except (req.exceptions.RequestException, ValueError) as e:
                 spider.logger.warning(
-                    f"[{company_slug}] Ingest attempt {attempt}/{INGEST_RETRIES} hit: {e}"
+                    f"[{company_slug}] Ingest attempt {attempt}/{retries} hit: {e}"
                 )
-            if attempt < INGEST_RETRIES:
+            if attempt < retries:
                 time.sleep(INGEST_BACKOFF_SECONDS * attempt)
         return None, last_status
 

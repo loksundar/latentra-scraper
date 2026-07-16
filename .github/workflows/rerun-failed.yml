@@ -1,0 +1,30 @@
+# Auto-rerun failed crawl jobs ONCE on fresh runners.
+# Hostinger's WAF blocks runner IPs at random; a rerun gets new runners
+# (new IPs), which clears the block in almost every observed case.
+# Guarded to attempt 1 only — no rerun loops.
+
+name: Auto-rerun failed crawl
+
+on:
+  workflow_run:
+    workflows: ["Scheduled job crawl"]
+    types: [completed]
+
+permissions:
+  actions: write
+
+jobs:
+  rerun:
+    if: >
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Rerun failed jobs (fresh runners, fresh IPs)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api -X POST \
+            "repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}/rerun-failed-jobs"
+          echo "requested rerun of failed jobs for run ${{ github.event.workflow_run.id }}"
