@@ -1,7 +1,8 @@
 """
 Link classifier — detects ATS type and company slug from a careers page URL.
 
-Supports: Greenhouse, Lever, Workday, Ashby, SmartRecruiters
+Supports: Greenhouse, Lever, Workday, Ashby, SmartRecruiters, Workable,
+Rippling, Gem, Oracle Recruiting Cloud
 Returns: {"source_type": "...", "company_slug": "...", "base_url": "..."} or None
 """
 
@@ -70,6 +71,42 @@ PATTERNS = [
         1,
         None,
     ),
+
+    # ── Workable ────────────────────────────────────
+    # https://apply.workable.com/company/j/SHORTCODE/  (bare /j/<code> has no account)
+    (
+        r'apply\.workable\.com/(?!j/|api/)([a-z0-9_-]+)',
+        'workable',
+        1,
+        None,
+    ),
+
+    # ── Rippling ────────────────────────────────────
+    # https://ats.rippling.com/company/jobs/<uuid>  (optional locale segment)
+    (
+        r'ats\.rippling\.com/(?:[a-z]{2}-[a-z]{2}/)?([a-z0-9_-]+)',
+        'rippling',
+        1,
+        None,
+    ),
+
+    # ── Gem ─────────────────────────────────────────
+    (
+        r'jobs\.gem\.com/([a-z0-9_-]+)',
+        'gem',
+        1,
+        None,
+    ),
+
+    # ── Oracle Recruiting Cloud ─────────────────────
+    # https://xxxx.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job/123
+    # slug = "<site>-<host prefix>" (site ids like CX_1 repeat across tenants)
+    (
+        r'(https?://([a-z0-9-]+)\.fa\.[a-z0-9.-]*oraclecloud\.com)/hcmUI/CandidateExperience/[a-z_-]+/sites/([a-z0-9_-]+)',
+        'oracle',
+        0,
+        lambda m: f"{m.group(1)}/hcmUI/CandidateExperience/en/sites/{m.group(3)}",
+    ),
 ]
 
 # Compile patterns once
@@ -91,7 +128,10 @@ def classify_url(url: str) -> dict | None:
     for regex, source_type, group_idx, builder in _COMPILED:
         match = regex.search(url)
         if match:
-            slug = match.group(group_idx).lower().rstrip("/")
+            if source_type == "oracle":
+                slug = f"{match.group(3)}-{match.group(2)}".lower()
+            else:
+                slug = match.group(group_idx).lower().rstrip("/")
             base_url = builder(match) if builder else None
             return {
                 "source_type": source_type,

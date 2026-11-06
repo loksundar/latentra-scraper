@@ -1,0 +1,69 @@
+{
+ "uuid": "1a3cfbeb-973a-4528-8fc6-43c04e179ea8",
+ "name": "Data Scientist I",
+ "description": {
+  "role": "<p>Role</p>",
+  "company": "<p>Co</p>"
+ },
+ "workLocations": [
+  "Chicago, IL"
+ ],
+ "department": {
+  "name": "Technology",
+  "base_department": "Technology",
+  "department_tree": [
+   "Technology"
+  ]
+ },
+ "employmentType": {
+  "label": "SALARIED_FT",
+  "id": "Salaried, full-time"
+ },
+ "createdOn": "2026-01-19T07:59:15.209000-08:00",
+ "eeocQuestionnaireEnabled": true,
+ "eeocQuestionnaireEnabledForJobPost": true,
+ "url": "https://ats.rippling.com/tavernresearch/jobs/1a3cfbeb-973a-4528-8fc6-43c04e179ea8",
+ "board": {
+  "boardType": "RIPPLING",
+  "slug": "tavernresearch",
+  "logo": {
+   "name": "TAVERN_FULL-LOGO.png",
+   "url": "https://secured-assets.ripplingcdn.com/us1/ats/68ffdb370d095327216dacb4/ats_public/a1dbea00006a47ceaf34d176e3c76c4d-sensitive.png?Expires=1794045974&Signature=xT4Vf3uEzQZslfkasRDcbU5QKykBA1sDbektlHSDCmZGeJaIHT4o1m7wkYHOjlKW1NAA8PdS2FbNXTxsUJjRNux2aH7XkIvU84SO-s2Mw77QaBl4G0wrtI8pHIEe8XdV5CO~8Jv0gsUAUBJfCbhIOue~ZcqJ8ocRvwSj5pnyspSW4wGxY3HH-zvqGjL4EUTcH8FV3-LzACIwYDIekyuErSUf2frNQL3jkdjMdXN1Cu5JvKlP3tbdM4Fd8B66Wo16Ye6povdo2rRcqmRVs2V9SVLJ8Vr4HThjb0tZ9acsMpA0JvoLdnGPNsGS03B7ohwFL85XNDT~N8dLxJCWcjnsag__&Key-Pair-Id=K2SM3GXN9F9XGM",
+   "type": "image/png"
+  },
+  "banner": {
+   "name": "",
+   "url": null,
+   "type": ""
+  },
+  "title": "Tavern Research",
+  "subtitle": null,
+  "boardURL": "https://ats.rippling.com/tavernresearch/jobs",
+  "fontType": "ARIAL_SANS_SERIF",
+  "linkColor": "#000000",
+  "buttonColor": "#2320df",
+  "buttonTextColor": null,
+  "legalNotice": null,
+  "noOpeningsMessage": null,
+  "groupJobsByLocation": false,
+  "showBoardLogoOnJobPost": true,
+  "showCompanyInfoUnderJobPost": false,
+  "companyName": "Tavern Research",
+  "isTest": false
+ },
+ "payRangeDetails": [
+  {
+   "location": "Chicago, IL",
+   "currency": "USD",
+   "frequency": "YEAR",
+   "rangeStart": 95500.0,
+   "rangeEnd": 113500.0,
+   "isRemote": false
+  }
+ ],
+ "applicationConfirmationTemplate": "69331c4697250cf8691241f4",
+ "hasAIEvaluationsEnabled": true,
+ "companyName": "Tavern Research",
+ "unlistedFromSearch": false,
+ "jsonLd": null
+}

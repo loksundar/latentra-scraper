@@ -1,0 +1,19 @@
+{
+ "items": [
+  {
+   "Id": "1001",
+   "Title": "Software Engineer II",
+   "ExternalPostedStartDate": "2026-11-02T08:00:00+00:00",
+   "ExternalDescriptionStr": "<p>Desc</p>",
+   "ExternalResponsibilitiesStr": null,
+   "ExternalQualificationsStr": "<p>Quals</p>",
+   "CorporateDescriptionStr": null,
+   "PrimaryLocation": "Phoenix, AZ, United States",
+   "PrimaryLocationCountry": "RO",
+   "JobSchedule": "Full time",
+   "WorkplaceType": "Hybrid",
+   "Organization": null,
+   "Department": null
+  }
+ ]
+}

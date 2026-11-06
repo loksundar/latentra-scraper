@@ -25,7 +25,8 @@ def test_sources_file_mode(tmp_path, monkeypatch):
 
 def test_source_types_cover_all_spiders():
     assert set(loader.SOURCE_TYPES) == {
-        "greenhouse", "lever", "workday", "ashby", "smartrecruiters"
+        "greenhouse", "lever", "workday", "ashby", "smartrecruiters",
+        "workable", "rippling", "gem", "oracle",
     }
 
 

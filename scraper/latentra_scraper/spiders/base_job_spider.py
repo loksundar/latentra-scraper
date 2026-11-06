@@ -10,6 +10,8 @@ import scrapy
 
 from latentra_scraper.sources.loader import get_active_sources
 
+_US_COUNTRY_CODES = {"US", "USA", "UNITED STATES"}
+
 
 class BaseJobSpider(scrapy.Spider):
     """
@@ -69,6 +71,33 @@ class BaseJobSpider(scrapy.Spider):
     def handle_error(self, failure):
         request = failure.request
         self.logger.error(f"Request failed: {request.url} — {failure.value}")
+
+    # ── Listing prefilter ────────────────────────────
+    # For ATSs that need one detail request per job (Workday, Rippling,
+    # Oracle), apply ValidatePipeline's title and US rules to the listing row
+    # first and skip details that would be dropped anyway.
+
+    def skip_from_listing(self, title: str, location: str = "", country: str = "") -> bool:
+        from latentra_scraper.pipelines.validate import (
+            IT_TITLE_PATTERNS,
+            NON_IT_TITLE_PATTERNS,
+            ValidatePipeline,
+        )
+        title = title or ""
+        if NON_IT_TITLE_PATTERNS.search(title) and not IT_TITLE_PATTERNS.search(title):
+            return True
+        if country and country.strip().upper() not in _US_COUNTRY_CODES:
+            return True
+        checker = getattr(self, "_us_checker", None)
+        if checker is None:
+            checker = self._us_checker = ValidatePipeline()
+        if not checker._is_likely_us({"location": location or ""}):
+            return True
+        return False
+
+    def count_prefiltered(self):
+        if getattr(self, "crawler", None):
+            self.crawler.stats.inc_value(f"{self.source_type}/listing_prefiltered")
 
     # ── Utility methods ──────────────────────────────
 

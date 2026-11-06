@@ -13,6 +13,11 @@ logger = logging.getLogger(__name__)
 # Timeout for validation requests
 TIMEOUT = 15
 
+# Several ATS front doors (Workable, Rippling, Oracle) 403 non-browser UAs.
+_UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                     "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+       "Accept": "application/json"}
+
 
 def validate_source(source: dict) -> dict:
     """
@@ -34,6 +39,14 @@ def validate_source(source: dict) -> dict:
             return _validate_workday(base_url, slug)
         elif source_type == "smartrecruiters":
             return _validate_smartrecruiters(slug)
+        elif source_type == "workable":
+            return _validate_workable(slug)
+        elif source_type == "rippling":
+            return _validate_rippling(slug)
+        elif source_type == "gem":
+            return _validate_gem(slug)
+        elif source_type == "oracle":
+            return _validate_oracle(base_url)
         else:
             return {"valid": False, "error": f"Unknown source_type: {source_type}"}
     except Exception as e:
@@ -94,4 +107,48 @@ def _validate_smartrecruiters(slug: str) -> dict:
     if r.status_code != 200:
         return {"valid": False, "error": f"HTTP {r.status_code}"}
     total = r.json().get("totalFound", 0)
+    return {"valid": total > 0, "job_count": total}
+
+
+def _validate_workable(slug: str) -> dict:
+    r = requests.get(f"https://apply.workable.com/api/v1/widget/accounts/{slug}", headers=_UA, timeout=TIMEOUT)
+    if r.status_code != 200:
+        return {"valid": False, "error": f"HTTP {r.status_code}"}
+    data = r.json()
+    jobs = data.get("jobs") or []
+    return {"valid": len(jobs) > 0, "job_count": len(jobs), "company_name": data.get("name")}
+
+
+def _validate_rippling(slug: str) -> dict:
+    r = requests.get(f"https://api.rippling.com/platform/api/ats/v1/board/{slug}/jobs", headers=_UA, timeout=TIMEOUT)
+    if r.status_code != 200:
+        return {"valid": False, "error": f"HTTP {r.status_code}"}
+    jobs = r.json()
+    if not isinstance(jobs, list):
+        return {"valid": False, "error": "Unexpected response"}
+    return {"valid": len(jobs) > 0, "job_count": len(jobs)}
+
+
+def _validate_gem(slug: str) -> dict:
+    r = requests.get(f"https://api.gem.com/job_board/v0/{slug}/job_posts/", headers=_UA, timeout=TIMEOUT)
+    if r.status_code != 200:
+        return {"valid": False, "error": f"HTTP {r.status_code}"}
+    jobs = r.json()
+    if isinstance(jobs, dict):
+        jobs = jobs.get("job_posts") or jobs.get("jobs") or []
+    return {"valid": len(jobs) > 0, "job_count": len(jobs)}
+
+
+def _validate_oracle(base_url: str) -> dict:
+    from latentra_scraper.spiders.oracle import parse_base_url
+    host, site = parse_base_url(base_url)
+    if not host:
+        return {"valid": False, "error": "Oracle requires base_url"}
+    url = (f"{host}/hcmRestApi/resources/latest/recruitingCEJobRequisitions"
+           f"?onlyData=true&finder=findReqs;siteNumber={site},limit=1,offset=0")
+    r = requests.get(url, headers=_UA, timeout=TIMEOUT)
+    if r.status_code != 200:
+        return {"valid": False, "error": f"HTTP {r.status_code}"}
+    items = r.json().get("items") or []
+    total = items[0].get("TotalJobsCount", 0) if items else 0
     return {"valid": total > 0, "job_count": total}

@@ -32,6 +32,10 @@ ATS_DOMAINS = [
     "ashbyhq.com",
     "myworkdayjobs.com",
     "smartrecruiters.com",
+    "apply.workable.com",
+    "ats.rippling.com",
+    "jobs.gem.com",
+    "oraclecloud.com",
     # Also catch direct careers pages that might redirect to ATS
     "boards.greenhouse.io",
     "jobs.lever.co",
@@ -53,6 +57,11 @@ def extract_urls_from_markdown(text: str) -> list[str]:
     return ats_urls
 
 
+# url -> company display name, filled from structured lists (listings.json)
+# so discovered sources get real names instead of slug-derived ones.
+COMPANY_NAME_HINTS: dict[str, str] = {}
+
+
 def extract_urls_from_listings_json(text: str) -> list[str]:
     """
     Extract ATS URLs from a SimplifyJobs-style listings.json (a list of
@@ -68,6 +77,8 @@ def extract_urls_from_listings_json(text: str) -> list[str]:
         return []
     live = []
     for row in rows:
+        if isinstance(row, dict) and row.get("url") and row.get("company_name"):
+            COMPANY_NAME_HINTS.setdefault(row["url"], row["company_name"])
         if not isinstance(row, dict):
             continue
         if not row.get("active") or row.get("is_visible") is False:

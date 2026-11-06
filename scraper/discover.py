@@ -25,7 +25,7 @@ from dotenv import load_dotenv
 sys.path.insert(0, os.path.dirname(__file__))
 
 from latentra_scraper.discovery.classifier import classify_urls
-from latentra_scraper.discovery.github_parser import extract_urls, fetch_github_raw
+from latentra_scraper.discovery.github_parser import COMPANY_NAME_HINTS, extract_urls, fetch_github_raw
 from latentra_scraper.discovery.validator import validate_source
 from latentra_scraper.discovery.seeder import submit_to_api
 
@@ -52,12 +52,14 @@ def load_github_sources() -> list[dict]:
 # Per-run activation caps. Workday is the expensive spider (one detail request
 # per job, large tenants), so new tenants are ramped in gradually rather than
 # all at once — a sudden 5x jump would blow the crawl's time budget.
-ACTIVATION_LIMITS = {"workday": 40, "greenhouse": 200, "ashby": 200, "lever": 200, "smartrecruiters": 50}
+ACTIVATION_LIMITS = {"workday": 40, "greenhouse": 200, "ashby": 200, "lever": 200,
+                     "smartrecruiters": 50, "workable": 150, "rippling": 100, "gem": 100,
+                     "oracle": 25}
 
 # Hard ceilings on ACTIVE sources per type, sized to the crawl matrix: each
 # Workday shard handles ~60 tenants inside the 45-min watchdog, 6 shards in
 # crawl.yml. Raise together with the shard count.
-ACTIVE_CEILINGS = {"workday": 360}
+ACTIVE_CEILINGS = {"workday": 360, "oracle": 120}
 
 
 def _activation_limits() -> dict:
@@ -151,6 +153,8 @@ def run_discovery(dry_run: bool = False, activate: bool = False):
             logger.info(f"  [{status}] {src['source_type']:15} {src['company_slug']:20} jobs={jobs}")
             if result["valid"]:
                 src["status"] = "validated"
+                src["company_name"] = (src.get("company_name") or result.get("company_name")
+                                       or COMPANY_NAME_HINTS.get(src.get("original_url", "")))
                 validated.append(src)
         except Exception as e:
             logger.error(f"  [ERR] {src['source_type']:15} {src['company_slug']:20} {e}")

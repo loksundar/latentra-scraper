@@ -1,7 +1,8 @@
 # Latentra Job Scraper
 
 Scrapy pipeline that collects tech job postings from public ATS APIs
-(Greenhouse, Lever, Workday, Ashby, SmartRecruiters) and pushes them to the
+(Greenhouse, Lever, Workday, Ashby, SmartRecruiters, Workable, Rippling,
+Gem, Oracle Recruiting Cloud) and pushes them to the
 Latentra Jobs board at https://latentra-technologies.com/jobs.
 
 ## How it runs
@@ -9,7 +10,7 @@ Latentra Jobs board at https://latentra-technologies.com/jobs.
 GitHub Actions (`.github/workflows/crawl.yml`) crawls four times a day
 (6am/9am/12pm/3pm ET).
 A `sources` job fetches the active company list once (with a cached and a
-committed fallback), then the five spiders run as parallel matrix jobs and
+committed fallback), then the spiders run as parallel matrix jobs (big ones sharded by company) and
 POST gzip-compressed batches to the ingest API.
 
 Weekly source discovery (`discover.yml`) finds new company ATS boards from

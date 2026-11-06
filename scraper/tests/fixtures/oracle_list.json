@@ -1,0 +1,499 @@
+{
+ "items": [
+  {
+   "SearchId": 1,
+   "Keyword": null,
+   "CorrectedKeyword": null,
+   "UseExactKeywordFlag": false,
+   "SuggestedKeyword": null,
+   "ExecuteSpellCheckFlag": true,
+   "Location": null,
+   "LocationId": null,
+   "Radius": 0,
+   "RadiusUnit": "MI",
+   "SelectedTitlesFacet": null,
+   "SelectedCategoriesFacet": null,
+   "SelectedPostingDatesFacet": null,
+   "SelectedLocationsFacet": null,
+   "LastSelectedFacet": null,
+   "Facets": "TITLES;LOCATIONS;LOCATION_LEVEL1;LOCATION_LEVEL2;LOCATION_LEVEL3;CATEGORIES;POSTING_DATES;WORK_LOCATIONS;FLEX_FIELDS;ORGANIZATIONS;WORKPLACE_TYPES",
+   "Offset": 0,
+   "Limit": 25,
+   "SortBy": "POSTING_DATES_DESC",
+   "TotalJobsCount": 3,
+   "Latitude": null,
+   "Longitude": null,
+   "SiteNumber": "Honeywell",
+   "JobFamilyId": null,
+   "PostingStartDate": null,
+   "PostingEndDate": null,
+   "SelectedWorkLocationsFacet": null,
+   "RequisitionId": null,
+   "CandidateNumber": null,
+   "WorkLocationZipCode": null,
+   "WorkLocationCountryCode": null,
+   "SelectedFlexFieldsFacets": null,
+   "OrganizationId": null,
+   "SelectedOrganizationsFacet": null,
+   "UserTargetFacetName": null,
+   "UserTargetFacetInputTerm": null,
+   "HotJobFlag": null,
+   "WorkplaceType": null,
+   "SelectedWorkplaceTypesFacet": null,
+   "BotQRShortCode": null,
+   "requisitionList": [
+    {
+     "Id": "1001",
+     "Title": "Software Engineer II",
+     "PostedDate": "2026-11-02",
+     "PostingEndDate": null,
+     "Language": "US",
+     "PrimaryLocationCountry": "US",
+     "GeographyId": 100000029469864,
+     "HotJobFlag": false,
+     "WorkplaceTypeCode": "ORA_HYBRID",
+     "JobFamily": null,
+     "JobFunction": null,
+     "WorkerType": null,
+     "ContractType": null,
+     "ManagerLevel": null,
+     "JobSchedule": null,
+     "JobShift": null,
+     "JobType": null,
+     "StudyLevel": null,
+     "DomesticTravelRequired": null,
+     "InternationalTravelRequired": null,
+     "WorkDurationYears": null,
+     "WorkDurationMonths": null,
+     "WorkHours": null,
+     "WorkDays": null,
+     "LegalEmployer": null,
+     "BusinessUnit": null,
+     "Department": null,
+     "Organization": null,
+     "BusinessUnitId": 300000002816270,
+     "LegalEmployerId": 300000002773973,
+     "OrganizationId": 300000011497085,
+     "MediaThumbURL": null,
+     "ShortDescriptionStr": "",
+     "PrimaryLocation": "Phoenix, AZ, United States",
+     "Distance": 1793923200000.0,
+     "TrendingFlag": false,
+     "BeFirstToApplyFlag": false,
+     "Relevancy": 9,
+     "WorkplaceType": "Hybrid",
+     "ExternalQualificationsStr": null,
+     "ExternalResponsibilitiesStr": null,
+     "secondaryLocations": []
+    },
+    {
+     "Id": "1002",
+     "Title": "Software Engineer",
+     "PostedDate": "2026-11-06",
+     "PostingEndDate": null,
+     "Language": "US",
+     "PrimaryLocationCountry": "RO",
+     "GeographyId": 100000029499764,
+     "HotJobFlag": false,
+     "WorkplaceTypeCode": "ORA_HYBRID",
+     "JobFamily": null,
+     "JobFunction": null,
+     "WorkerType": null,
+     "ContractType": null,
+     "ManagerLevel": null,
+     "JobSchedule": null,
+     "JobShift": null,
+     "JobType": null,
+     "StudyLevel": null,
+     "DomesticTravelRequired": null,
+     "InternationalTravelRequired": null,
+     "WorkDurationYears": null,
+     "WorkDurationMonths": null,
+     "WorkHours": null,
+     "WorkDays": null,
+     "LegalEmployer": null,
+     "BusinessUnit": null,
+     "Department": null,
+     "Organization": null,
+     "BusinessUnitId": 300000002835350,
+     "LegalEmployerId": 300000002773596,
+     "OrganizationId": 300000011497085,
+     "MediaThumbURL": null,
+     "ShortDescriptionStr": "",
+     "PrimaryLocation": "Bucuresti, Romania",
+     "Distance": 1793923200000.0,
+     "TrendingFlag": false,
+     "BeFirstToApplyFlag": false,
+     "Relevancy": 9,
+     "WorkplaceType": "Hybrid",
+     "ExternalQualificationsStr": null,
+     "ExternalResponsibilitiesStr": null,
+     "secondaryLocations": []
+    },
+    {
+     "Id": "1003",
+     "Title": "Forklift Operator",
+     "PostedDate": "2026-11-06",
+     "PostingEndDate": null,
+     "Language": "US",
+     "PrimaryLocationCountry": "US",
+     "GeographyId": 100000013381541,
+     "HotJobFlag": false,
+     "WorkplaceTypeCode": "ORA_HYBRID",
+     "JobFamily": null,
+     "JobFunction": null,
+     "WorkerType": null,
+     "ContractType": null,
+     "ManagerLevel": null,
+     "JobSchedule": null,
+     "JobShift": null,
+     "JobType": null,
+     "StudyLevel": null,
+     "DomesticTravelRequired": null,
+     "InternationalTravelRequired": null,
+     "WorkDurationYears": null,
+     "WorkDurationMonths": null,
+     "WorkHours": null,
+     "WorkDays": null,
+     "LegalEmployer": null,
+     "BusinessUnit": null,
+     "Department": null,
+     "Organization": null,
+     "BusinessUnitId": 300000002818522,
+     "LegalEmployerId": 300000002751769,
+     "OrganizationId": 300000003325289,
+     "MediaThumbURL": null,
+     "ShortDescriptionStr": "",
+     "PrimaryLocation": "Charlotte, NC, United States",
+     "Distance": 1793923200000.0,
+     "TrendingFlag": false,
+     "BeFirstToApplyFlag": true,
+     "Relevancy": 9,
+     "WorkplaceType": "Hybrid",
+     "ExternalQualificationsStr": null,
+     "ExternalResponsibilitiesStr": null,
+     "secondaryLocations": []
+    }
+   ],
+   "categoriesFacet": [
+    {
+     "Id": 300000017425610,
+     "Name": "Engineering",
+     "TotalCount": 433
+    },
+    {
+     "Id": 300000017425619,
+     "Name": "Customer Experience",
+     "TotalCount": 237
+    },
+    {
+     "Id": 300000017425613,
+     "Name": "Integrated Supply Chain",
+     "TotalCount": 152
+    },
+    {
+     "Id": 300000017425595,
+     "Name": "Sales",
+     "TotalCount": 114
+    },
+    {
+     "Id": 300000017425640,
+     "Name": "Business Management",
+     "TotalCount": 75
+    },
+    {
+     "Id": 300000017425667,
+     "Name": "Sales Excellence and Support",
+     "TotalCount": 63
+    },
+    {
+     "Id": 300000017425649,
+     "Name": "Finance",
+     "TotalCount": 55
+    },
+    {
+     "Id": 300000017425625,
+     "Name": "Legal",
+     "TotalCount": 33
+    },
+    {
+     "Id": 300000017425604,
+     "Name": "Procurement",
+     "TotalCount": 27
+    },
+    {
+     "Id": 300000017425634,
+     "Name": "Information Technology",
+     "TotalCount": 26
+    }
+   ],
+   "locationsFacet": [
+    {
+     "Id": 300000000469866,
+     "Name": "United States",
+     "TotalCount": 462
+    },
+    {
+     "Id": 300000000469485,
+     "Name": "India",
+     "TotalCount": 304
+    },
+    {
+     "Id": 100000013381548,
+     "Name": "Karnataka, India",
+     "TotalCount": 121
+    },
+    {
+     "Id": 100000013395554,
+     "Name": "Bengaluru, Karnataka, India",
+     "TotalCount": 120
+    },
+    {
+     "Id": 100000013381552,
+     "Name": "Maharashtra, India",
+     "TotalCount": 118
+    },
+    {
+     "Id": 100000013394496,
+     "Name": "Pune, Maharashtra, India",
+     "TotalCount": 101
+    },
+    {
+     "Id": 300000007379257,
+     "Name": "NC, United States",
+     "TotalCount": 100
+    },
+    {
+     "Id": 300000007379267,
+     "Name": "TX, United States",
+     "TotalCount": 94
+    },
+    {
+     "Id": 300000007379234,
+     "Name": "GA, United States",
+     "TotalCount": 89
+    },
+    {
+     "Id": 300000007416119,
+     "Name": "Charlotte, NC, United States",
+     "TotalCount": 87
+    }
+   ],
+   "postingDatesFacet": [
+    {
+     "Id": 7,
+     "Name": "Less than 7 days",
+     "TotalCount": 250
+    },
+    {
+     "Id": 30,
+     "Name": "Less than 30 days",
+     "TotalCount": 878
+    },
+    {
+     "Id": 31,
+     "Name": "Greater than 30 days",
+     "TotalCount": 481
+    }
+   ],
+   "titlesFacet": [
+    {
+     "Id": "109",
+     "Name": "Field Service Support",
+     "TotalCount": 167
+    },
+    {
+     "Id": "124",
+     "Name": "SW Software Engineering",
+     "TotalCount": 75
+    },
+    {
+     "Id": "125",
+     "Name": "Engineering Program Management",
+     "TotalCount": 72
+    },
+    {
+     "Id": "236",
+     "Name": "Production Workers",
+     "TotalCount": 58
+    },
+    {
+     "Id": "120",
+     "Name": "Systems Engineering",
+     "TotalCount": 52
+    },
+    {
+     "Id": "230",
+     "Name": "Account Management",
+     "TotalCount": 39
+    },
+    {
+     "Id": "347",
+     "Name": "Customer Program Management",
+     "TotalCount": 36
+    },
+    {
+     "Id": "114",
+     "Name": "Application Engineering",
+     "TotalCount": 35
+    },
+    {
+     "Id": "340",
+     "Name": "SW Cyber Security",
+     "TotalCount": 30
+    },
+    {
+     "Id": "103",
+     "Name": "BM Project Management",
+     "TotalCount": 29
+    }
+   ],
+   "workLocationsFacet": [
+    {
+     "Id": 300000017420441,
+     "Name": "Pune,Maharashtra,India",
+     "TotalCount": 92
+    },
+    {
+     "Id": 300000017420327,
+     "Name": "HW Campus II, Bangalore, India",
+     "TotalCount": 81
+    },
+    {
+     "Id": 300000017421863,
+     "Name": "855 S Mint St",
+     "TotalCount": 72
+    },
+    {
+     "Id": 300000017419439,
+     "Name": "715 Peachtree Street, N.E.",
+     "TotalCount": 67
+    },
+    {
+     "Id": 300000017424413,
+     "Name": "2101 CityWest Blvd",
+     "TotalCount": 61
+    },
+    {
+     "Id": 300000017424209,
+     "Name": "Bucharest, Romania",
+     "TotalCount": 47
+    },
+    {
+     "Id": 300000017419733,
+     "Name": "Orion Campus, HTS, Bangalore,",
+     "TotalCount": 44
+    },
+    {
+     "Id": 300000017419703,
+     "Name": "6111 North River Rd",
+     "TotalCount": 26
+    },
+    {
+     "Id": 300000017416267,
+     "Name": "Shanghai,China",
+     "TotalCount": 25
+    },
+    {
+     "Id": 300000017345531,
+     "Name": "One Firelite Pl",
+     "TotalCount": 20
+    }
+   ],
+   "flexFieldsFacet": [],
+   "organizationsFacet": [
+    {
+     "Id": 300000011497075,
+     "Name": "US & Canada",
+     "TotalCount": 444
+    },
+    {
+     "Id": 300000003325289,
+     "Name": "India",
+     "TotalCount": 302
+    },
+    {
+     "Id": 300000011497085,
+     "Name": "Europe",
+     "TotalCount": 267
+    },
+    {
+     "Id": 300000011497080,
+     "Name": "Asia & Pacific",
+     "TotalCount": 95
+    },
+    {
+     "Id": 300000003325128,
+     "Name": "Mexico",
+     "TotalCount": 75
+    },
+    {
+     "Id": 300000011497065,
+     "Name": "Greater China",
+     "TotalCount": 72
+    },
+    {
+     "Id": 300000011497060,
+     "Name": "META",
+     "TotalCount": 43
+    },
+    {
+     "Id": 1,
+     "Name": "Honeywell International Inc.",
+     "TotalCount": 42
+    },
+    {
+     "Id": 300000011497070,
+     "Name": "Latin America",
+     "TotalCount": 6
+    },
+    {
+     "Id": 300000003330710,
+     "Name": "United States CORP",
+     "TotalCount": 3
+    }
+   ],
+   "workplaceTypesFacet": [
+    {
+     "Id": "ORA_ON_SITE",
+     "Name": "On-site",
+     "TotalCount": 910
+    },
+    {
+     "Id": "ORA_HYBRID",
+     "Name": "Hybrid",
+     "TotalCount": 375
+    },
+    {
+     "Id": "ORA_REMOTE",
+     "Name": "Remote",
+     "TotalCount": 74
+    }
+   ]
+  }
+ ],
+ "count": 1,
+ "hasMore": false,
+ "limit": 200,
+ "offset": 0,
+ "links": [
+  {
+   "rel": "self",
+   "href": "https://ibqbjb.fa.ocs.oraclecloud.com:443/hcmRestApi/resources/11.13.18.05/recruitingCEJobRequisitions",
+   "name": "recruitingCEJobRequisitions",
+   "kind": "collection"
+  },
+  {
+   "rel": "action",
+   "href": "https://ibqbjb.fa.ocs.oraclecloud.com:443/hcmRestApi/resources/11.13.18.05/recruitingCEJobRequisitions/action/getRequisitionsLocationCoordinates",
+   "name": "getRequisitionsLocationCoordinates",
+   "kind": "other"
+  },
+  {
+   "rel": "action",
+   "href": "https://ibqbjb.fa.ocs.oraclecloud.com:443/hcmRestApi/resources/11.13.18.05/recruitingCEJobRequisitions/action/getRequisitionDetailsForMap",
+   "name": "getRequisitionDetailsForMap",
+   "kind": "other"
+  }
+ ]
+}

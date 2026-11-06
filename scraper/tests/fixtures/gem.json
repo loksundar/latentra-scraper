@@ -1,0 +1,26 @@
+[
+ {
+  "id": "g-1",
+  "title": "Founding Engineer",
+  "location": {
+   "name": "San Francisco, CA"
+  },
+  "absolute_url": "https://jobs.gem.com/acme/g-1",
+  "first_published_at": "2026-10-30T12:00:00Z",
+  "updated_at": "2026-11-01T00:00:00Z",
+  "content": "<p>Hi</p>",
+  "departments": [
+   {
+    "name": "Engineering"
+   }
+  ],
+  "employment_type": "Full-time"
+ },
+ {
+  "id": "g-2",
+  "title": "Designer",
+  "location": "Remote (US)",
+  "absolute_url": "https://jobs.gem.com/acme/g-2",
+  "content_plain": "x"
+ }
+]

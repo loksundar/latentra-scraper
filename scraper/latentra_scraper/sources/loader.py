@@ -26,7 +26,8 @@ _UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 _RETRIES = 6
 _BACKOFF_SECONDS = 10  # exponential: 10, 20, 40, 80, 160s (~5 min horizon)
 
-SOURCE_TYPES = ["greenhouse", "lever", "workday", "ashby", "smartrecruiters"]
+SOURCE_TYPES = ["greenhouse", "lever", "workday", "ashby", "smartrecruiters",
+                "workable", "rippling", "gem", "oracle"]
 
 
 def _apply_shard(sources: list[dict]) -> list[dict]:

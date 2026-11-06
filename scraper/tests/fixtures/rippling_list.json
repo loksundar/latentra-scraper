@@ -1,0 +1,28 @@
+[
+ {
+  "uuid": "1a3cfbeb-973a-4528-8fc6-43c04e179ea8",
+  "name": "Data Scientist I",
+  "department": {
+   "id": "Technology",
+   "label": "Technology"
+  },
+  "url": "https://ats.rippling.com/tavernresearch/jobs/1a3cfbeb-973a-4528-8fc6-43c04e179ea8",
+  "workLocation": {
+   "label": "Chicago, IL",
+   "id": "Chicago, IL"
+  }
+ },
+ {
+  "uuid": "e1b41d9e-c51a-423f-870c-0fd4deea23a8",
+  "name": "Data Scientist II",
+  "department": {
+   "id": "Technology",
+   "label": "Technology"
+  },
+  "url": "https://ats.rippling.com/tavernresearch/jobs/e1b41d9e-c51a-423f-870c-0fd4deea23a8",
+  "workLocation": {
+   "label": "Chicago, IL",
+   "id": "Chicago, IL"
+  }
+ }
+]
