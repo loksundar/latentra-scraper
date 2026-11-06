@@ -106,6 +106,9 @@ jobs:
           - { spider: gem,             shard: 1, shards: 1 }
           - { spider: oracle,          shard: 1, shards: 2 }
           - { spider: oracle,          shard: 2, shards: 2 }
+          - { spider: amazon,          shard: 1, shards: 1 }
+          - { spider: apple,           shard: 1, shards: 1 }
+          - { spider: tiktok,          shard: 1, shards: 1 }
           - { spider: workday,         shard: 1, shards: 6 }
           - { spider: workday,         shard: 2, shards: 6 }
           - { spider: workday,         shard: 3, shards: 6 }

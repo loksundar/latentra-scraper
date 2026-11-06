@@ -47,6 +47,8 @@ def validate_source(source: dict) -> dict:
             return _validate_gem(slug)
         elif source_type == "oracle":
             return _validate_oracle(base_url)
+        elif source_type in ("amazon", "apple", "tiktok"):
+            return _validate_single_company(source_type)
         else:
             return {"valid": False, "error": f"Unknown source_type: {source_type}"}
     except Exception as e:
@@ -152,3 +154,30 @@ def _validate_oracle(base_url: str) -> dict:
     items = r.json().get("items") or []
     total = items[0].get("TotalJobsCount", 0) if items else 0
     return {"valid": total > 0, "job_count": total}
+
+
+_SINGLE_COMPANY_NAMES = {"amazon": "Amazon", "apple": "Apple", "tiktok": "TikTok"}
+
+
+def _validate_single_company(source_type: str) -> dict:
+    """Big-company career sites: confirm the public endpoint still answers."""
+    if source_type == "amazon":
+        r = requests.get("https://www.amazon.jobs/en/search.json",
+                         params={"normalized_country_code[]": "USA", "result_limit": 1},
+                         headers=_UA, timeout=TIMEOUT)
+        count = r.json().get("hits", 0) if r.status_code == 200 else 0
+    elif source_type == "apple":
+        r = requests.get("https://jobs.apple.com/api/v1/CSRFToken", headers=_UA, timeout=TIMEOUT)
+        count = 1 if r.status_code == 200 and r.headers.get("x-apple-csrf-token") else 0
+    else:
+        r = requests.post(
+            "https://api.lifeattiktok.com/api/v1/public/supplier/search/job/posts",
+            json={"recruitment_id_list": [], "job_category_id_list": [], "subject_id_list": [],
+                  "location_code_list": [], "keyword": "", "limit": 1, "offset": 0},
+            headers={**_UA, "website-path": "tiktok", "Origin": "https://lifeattiktok.com",
+                     "Referer": "https://lifeattiktok.com/"},
+            timeout=TIMEOUT)
+        count = ((r.json().get("data") or {}).get("count", 0)) if r.status_code == 200 else 0
+    if not count:
+        return {"valid": False, "error": f"HTTP {r.status_code}"}
+    return {"valid": True, "job_count": count, "company_name": _SINGLE_COMPANY_NAMES[source_type]}

@@ -181,3 +181,13 @@ def test_post_batch_does_not_retry_contract_errors(monkeypatch):
     data, status = p._post_batch(make_spider(), "acme", make_payload(2))
     assert data is None and status == 400
     assert len(calls) == 1
+
+
+def test_watchdog_detection():
+    settings = SimpleNamespace(getint=lambda k, d=0: 2700 if k == "CLOSESPIDER_TIMEOUT" else d)
+    spider = SimpleNamespace(crawler=SimpleNamespace(settings=settings))
+    assert IngestPipeline._hit_watchdog(spider, 2699)
+    assert not IngestPipeline._hit_watchdog(spider, 1200)
+    assert not IngestPipeline._hit_watchdog(SimpleNamespace(), 9999)  # no crawler (tests)
+    off = SimpleNamespace(crawler=SimpleNamespace(settings=SimpleNamespace(getint=lambda k, d=0: 0)))
+    assert not IngestPipeline._hit_watchdog(off, 9999)

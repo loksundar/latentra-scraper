@@ -166,6 +166,19 @@ class IngestPipeline:
         validation_failures = getattr(spider, "validation_failures", 0)
         validation_warnings = getattr(spider, "validation_warnings", 0)
 
+        # A crawl cut short by the CLOSESPIDER_TIMEOUT watchdog only saw part
+        # of each company's postings. Sending it as a full run would make the
+        # server's stale sweep DELETE every job the crawl didn't reach (big
+        # single-company sources like Apple/Amazon lose hundreds, then
+        # re-add them next run with fresh first_seen dates). Mark it partial:
+        # upsert only, no sweep.
+        timed_out = self._hit_watchdog(spider, runtime)
+        if timed_out:
+            spider.logger.warning(
+                f"Crawl hit the {runtime:.0f}s watchdog — ingesting as partial "
+                f"(stale-job sweep skipped this run)"
+            )
+
         deferred = []  # (company_slug, payload) — batches to re-send after cooldown
         for (source, company_slug), jobs in self.batches.items():
             alive_jobs, dead_ids = self._validate_batch(jobs, spider, company_slug)
@@ -179,6 +192,8 @@ class IngestPipeline:
                 "validation_warnings": validation_warnings,
                 "runtime_seconds": runtime,
             }
+            if timed_out:
+                payload["partial"] = 1
 
             ok, ins, upd, deleted = self._send_batch(spider, company_slug, payload)
             if not ok:
@@ -214,6 +229,14 @@ class IngestPipeline:
             f"Ingest totals: {total_inserted} inserted, {total_updated} updated, "
             f"{total_deleted} deleted"
         )
+
+    @staticmethod
+    def _hit_watchdog(spider, runtime: float) -> bool:
+        crawler = getattr(spider, "crawler", None)
+        if crawler is None:
+            return False
+        limit = crawler.settings.getint("CLOSESPIDER_TIMEOUT", 0)
+        return bool(limit) and runtime >= limit - 5
 
     def _send_batch(self, spider, company_slug, payload, depth=0):
         """Send one company batch, splitting in half on a persistent 403.

@@ -54,7 +54,7 @@ def load_github_sources() -> list[dict]:
 # all at once — a sudden 5x jump would blow the crawl's time budget.
 ACTIVATION_LIMITS = {"workday": 40, "greenhouse": 200, "ashby": 200, "lever": 200,
                      "smartrecruiters": 50, "workable": 150, "rippling": 100, "gem": 100,
-                     "oracle": 25}
+                     "oracle": 25, "amazon": 1, "apple": 1, "tiktok": 1}
 
 # Hard ceilings on ACTIVE sources per type, sized to the crawl matrix: each
 # Workday shard handles ~60 tenants inside the 45-min watchdog, 6 shards in

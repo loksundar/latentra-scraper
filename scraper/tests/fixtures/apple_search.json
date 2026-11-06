@@ -1,0 +1,87 @@
+{
+ "res": {
+  "searchResults": [
+   {
+    "id": "200693759-3956",
+    "jobSummary": "Join a team of passionate and creative engineers dedicated to building technologies that shape the future. One of Apple\u2019s R&D groups is seeking a Robotics Controls Engineer to develop, prototype, and validate complex, next-generation systems. In this role, you will build capabilities to assess the performance of system prototypes and sub-components, developing novel methods, instrumentation, and testing software across mechanisms, sensors, and electronics. We are looking for hands-on, creative individuals eager to push performance boundaries on cutting-edge hardware.",
+    "locations": [
+     {
+      "postLocationId": "postLocation-SVL",
+      "city": "",
+      "stateProvince": "",
+      "countryName": "United States of America",
+      "metro": "",
+      "region": "",
+      "name": "Sunnyvale",
+      "countryID": "iso-country-USA",
+      "level": 5
+     }
+    ],
+    "positionId": "200693759",
+    "postingDate": "Nov 06, 2026",
+    "postingTitle": "Mechatronics Controls Engineer",
+    "localeInfo": {
+     "languageCode": "en_US",
+     "dateFormat": "MMM D, YYYY",
+     "defaultLocaleCode": "en-us"
+    },
+    "postDateInGMT": "2026-11-06T04:04:34.753Z",
+    "transformedPostingTitle": "mechatronics-controls-engineer",
+    "reqId": "200693759-3956",
+    "managedPipelineRole": false,
+    "standardWeeklyHours": 40,
+    "team": {
+     "teamName": "Hardware",
+     "teamID": "teamsAndSubTeams-HRDWR",
+     "teamCode": "HRDWR"
+    },
+    "type": "PIPE",
+    "homeOffice": false,
+    "jobPositionId": "PIPE-200693759",
+    "isMultiLocation": false,
+    "postExternal": true
+   },
+   {
+    "id": "PIPE-114438158",
+    "jobSummary": "Apple Retail is where the best of Apple comes together. We bring our expertise to help people do what they love, delivering an only-at-Apple experience. We believe inclusion is a shared responsibility and we work together to foster a culture where everyone belongs and is inspired to do their best work.\n\nAs a Specialist, you build brand loyalty and create owners of Apple products and services. You\u2019re dedicated to selling and delivering a customer service experience that is unlike any other. A Specialist is curious \u2014 you ask questions to learn about our customers\u2019 needs, customizing recommendations to enrich their lives.",
+    "locations": [
+     {
+      "postLocationId": "postLocation-USA",
+      "city": "",
+      "stateProvince": "",
+      "countryName": "United States of America",
+      "metro": "",
+      "region": "",
+      "name": "United States",
+      "countryID": "iso-country-USA",
+      "level": 1
+     }
+    ],
+    "positionId": "114438158",
+    "postingDate": "Nov 06, 2026",
+    "postingTitle": "US - Specialist: Seasonal, Part-time",
+    "localeInfo": {
+     "languageCode": "en_US",
+     "dateFormat": "MMM D, YYYY",
+     "defaultLocaleCode": "en-us"
+    },
+    "postDateInGMT": "2026-11-06T10:16:10.512218263Z",
+    "transformedPostingTitle": "us-specialist-seasonal-part-time",
+    "reqId": "PIPE-114438158",
+    "managedPipelineRole": true,
+    "standardWeeklyHours": 40,
+    "team": {
+     "teamName": "Apple Retail",
+     "teamID": "teamsAndSubTeams-APPST",
+     "teamCode": "APPST"
+    },
+    "type": "PIPE",
+    "homeOffice": false,
+    "jobPositionId": "PIPE-114438158",
+    "isMultiLocation": false,
+    "postExternal": true
+   }
+  ],
+  "totalRecords": 2
+ }
+}

@@ -107,6 +107,12 @@ PATTERNS = [
         0,
         lambda m: f"{m.group(1)}/hcmUI/CandidateExperience/en/sites/{m.group(3)}",
     ),
+    # ── Single-company career sites ─────────────────
+    # Each maps to one fixed source row (slug = company), so any posting
+    # link in a job list discovers the whole company's board.
+    (r'(amazon)\.jobs/', 'amazon', 1, None),
+    (r'jobs\.(apple)\.com/', 'apple', 1, None),
+    (r'life(?:at)?(tiktok)\.com/', 'tiktok', 1, None),
 ]
 
 # Compile patterns once

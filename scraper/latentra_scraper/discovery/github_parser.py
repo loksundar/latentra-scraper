@@ -36,6 +36,9 @@ ATS_DOMAINS = [
     "ats.rippling.com",
     "jobs.gem.com",
     "oraclecloud.com",
+    "amazon.jobs",
+    "jobs.apple.com",
+    "lifeattiktok.com",
     # Also catch direct careers pages that might redirect to ATS
     "boards.greenhouse.io",
     "jobs.lever.co",

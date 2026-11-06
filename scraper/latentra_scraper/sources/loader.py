@@ -27,7 +27,8 @@ _RETRIES = 6
 _BACKOFF_SECONDS = 10  # exponential: 10, 20, 40, 80, 160s (~5 min horizon)
 
 SOURCE_TYPES = ["greenhouse", "lever", "workday", "ashby", "smartrecruiters",
-                "workable", "rippling", "gem", "oracle"]
+                "workable", "rippling", "gem", "oracle",
+                "amazon", "apple", "tiktok"]
 
 
 def _apply_shard(sources: list[dict]) -> list[dict]:

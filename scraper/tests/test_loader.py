@@ -27,6 +27,7 @@ def test_source_types_cover_all_spiders():
     assert set(loader.SOURCE_TYPES) == {
         "greenhouse", "lever", "workday", "ashby", "smartrecruiters",
         "workable", "rippling", "gem", "oracle",
+        "amazon", "apple", "tiktok",
     }
 
 
