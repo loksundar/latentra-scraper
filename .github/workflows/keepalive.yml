@@ -1,0 +1,88 @@
+# Keepalive — stops GitHub from silently killing the schedule.
+#
+# GitHub auto-disables `schedule:` workflows in PUBLIC repos after 60 days with
+# no repository activity. That is exactly what stopped the crawl on 2026-09-14
+# (last commit 2026-07-16 + 60 days). Nothing failed; the cron just stopped.
+#
+# This workflow defends against that two ways:
+#   1. Re-enables every scheduled workflow via the API on each run.
+#   2. If the default branch has had no commit for KEEPALIVE_DAYS, pushes an
+#      empty commit (the activity signal GitHub actually counts).
+#
+# It is triggered three independent ways so no single trigger dying matters:
+#   - after every crawl (workflow_run triggers are NOT subject to the 60-day
+#     inactivity disable),
+#   - its own weekly schedule,
+#   - manually.
+
+name: Keepalive
+
+on:
+  workflow_run:
+    workflows: ["Scheduled job crawl"]
+    types: [completed]
+  schedule:
+    - cron: "17 6 * * 0"   # Sundays 06:17 UTC
+  workflow_dispatch: {}
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: keepalive
+  cancel-in-progress: false
+
+env:
+  KEEPALIVE_DAYS: "40"
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Re-enable scheduled workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -u
+          for wf in crawl.yml discover.yml keepalive.yml rerun-failed.yml; do
+            state=$(gh api "repos/$REPO/actions/workflows/$wf" --jq .state 2>/dev/null || echo missing)
+            if [ "$state" = "missing" ]; then
+              echo "skip $wf (not found)"
+              continue
+            fi
+            if gh api -X PUT "repos/$REPO/actions/workflows/$wf/enable" >/dev/null; then
+              echo "$wf: was '$state' -> enabled"
+            else
+              echo "::warning::could not enable $wf (state '$state')"
+            fi
+            if [ "$state" != "active" ]; then
+              echo "::warning::$wf had been '$state' — re-enabled by keepalive"
+            fi
+          done
+
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Empty commit if the repo has gone quiet
+        run: |
+          last=$(git log -1 --format=%ct)
+          now=$(date +%s)
+          age_days=$(( (now - last) / 86400 ))
+          echo "last commit on ${GITHUB_REF_NAME}: ${age_days} days ago (threshold ${KEEPALIVE_DAYS})"
+          if [ "$age_days" -lt "$KEEPALIVE_DAYS" ]; then
+            echo "recent activity — no commit needed"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "chore: keepalive (prevent GitHub 60-day schedule disable)"
+          for i in 1 2 3; do
+            git push && exit 0
+            git pull --rebase && sleep 5
+          done
+          echo "::error::keepalive push failed"
+          exit 1
