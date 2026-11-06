@@ -32,6 +32,8 @@ def validate_source(source: dict) -> dict:
             return _validate_ashby(slug)
         elif source_type == "workday":
             return _validate_workday(base_url, slug)
+        elif source_type == "smartrecruiters":
+            return _validate_smartrecruiters(slug)
         else:
             return {"valid": False, "error": f"Unknown source_type: {source_type}"}
     except Exception as e:
@@ -83,4 +85,13 @@ def _validate_workday(base_url: str, slug: str) -> dict:
         return {"valid": False, "error": f"HTTP {r.status_code}"}
     data = r.json()
     total = data.get("total", 0)
+    return {"valid": total > 0, "job_count": total}
+
+
+def _validate_smartrecruiters(slug: str) -> dict:
+    url = f"https://api.smartrecruiters.com/v1/companies/{slug}/postings"
+    r = requests.get(url, params={"limit": 1}, timeout=TIMEOUT)
+    if r.status_code != 200:
+        return {"valid": False, "error": f"HTTP {r.status_code}"}
+    total = r.json().get("totalFound", 0)
     return {"valid": total > 0, "job_count": total}

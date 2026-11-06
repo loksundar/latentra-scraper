@@ -1,17 +1,42 @@
 [
   {
-    "name": "SimplifyJobs New Grad",
-    "url": "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/README.md",
+    "name": "SimplifyJobs New Grad listings.json",
+    "url": "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/.github/scripts/listings.json",
     "origin": "github-simplify-newgrad"
   },
   {
-    "name": "SimplifyJobs Summer Internships",
-    "url": "https://raw.githubusercontent.com/SimplifyJobs/Summer2025-Internships/dev/README.md",
+    "name": "SimplifyJobs Internships listings.json",
+    "url": "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json",
     "origin": "github-simplify-intern"
   },
   {
-    "name": "pittcsc New Grad",
-    "url": "https://raw.githubusercontent.com/pittcsc/NewGrad-2025/dev/README.md",
-    "origin": "github-pittcsc-newgrad"
+    "name": "SimplifyJobs Off-Season Internships",
+    "url": "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/README-Off-Season.md",
+    "origin": "github-simplify-offseason"
+  },
+  {
+    "name": "speedyapply 2027 SWE New Grad USA",
+    "url": "https://raw.githubusercontent.com/speedyapply/2027-SWE-College-Jobs/main/NEW_GRAD_USA.md",
+    "origin": "github-speedyapply-swe-ng"
+  },
+  {
+    "name": "speedyapply 2027 SWE (summary)",
+    "url": "https://raw.githubusercontent.com/speedyapply/2027-SWE-College-Jobs/main/README.md",
+    "origin": "github-speedyapply-swe"
+  },
+  {
+    "name": "speedyapply 2027 AI New Grad USA",
+    "url": "https://raw.githubusercontent.com/speedyapply/2027-AI-College-Jobs/main/NEW_GRAD_USA.md",
+    "origin": "github-speedyapply-ai-ng"
+  },
+  {
+    "name": "speedyapply 2027 AI (summary)",
+    "url": "https://raw.githubusercontent.com/speedyapply/2027-AI-College-Jobs/main/README.md",
+    "origin": "github-speedyapply-ai"
+  },
+  {
+    "name": "Quant Internships/New Grad 2027",
+    "url": "https://raw.githubusercontent.com/quant-scraper/Quant-Internships-New-Grad-2027/main/README.md",
+    "origin": "github-quant"
   }
 ]

@@ -15,6 +15,11 @@ import json
 import scrapy
 
 from latentra_scraper.items import JobItem
+from latentra_scraper.pipelines.validate import (
+    IT_TITLE_PATTERNS,
+    NON_IT_TITLE_PATTERNS,
+    ValidatePipeline,
+)
 from latentra_scraper.spiders.base_job_spider import BaseJobSpider
 
 
@@ -23,6 +28,20 @@ class WorkdaySpider(BaseJobSpider):
     source_type = "workday"
 
     PAGE_SIZE = 20
+
+    # Detail pages are one request per job — by far the dominant cost. Large
+    # Workday tenants (hospitals, retailers) list thousands of non-tech jobs
+    # that ValidatePipeline would drop anyway, so apply the same title and
+    # US-location rules to the listing row and skip those details entirely.
+    _us_check = ValidatePipeline()
+
+    def _skip_from_listing(self, posting) -> bool:
+        title = posting.get("title") or ""
+        if NON_IT_TITLE_PATTERNS.search(title) and not IT_TITLE_PATTERNS.search(title):
+            return True
+        if not self._us_check._is_likely_us({"location": posting.get("locationsText") or ""}):
+            return True
+        return False
 
     def build_url(self, source):
         return source.get("base_url", "")
@@ -64,6 +83,9 @@ class WorkdaySpider(BaseJobSpider):
         for posting in postings:
             ext_path = posting.get("externalPath", "")
             if not ext_path:
+                continue
+            if self._skip_from_listing(posting):
+                self.crawler.stats.inc_value("workday/listing_prefiltered")
                 continue
 
             # externalPath looks like "/en-US/SiteId/job/Location/Title_JRID"

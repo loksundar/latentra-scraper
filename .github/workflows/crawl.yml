@@ -82,15 +82,31 @@ jobs:
           path: scraper/sources.json
           retention-days: 2
 
+  # Big spiders are split into shards (stable hash of company slug, see
+  # loader._apply_shard) so each job stays well inside the 45-min watchdog as
+  # discovery keeps adding companies. Public repo: runner minutes are free.
   crawl:
-    name: crawl ${{ matrix.spider }}
+    name: crawl ${{ matrix.spider }} ${{ matrix.shard }}/${{ matrix.shards }}
     needs: sources
     runs-on: ubuntu-latest
     timeout-minutes: 75
     strategy:
       fail-fast: false
+      max-parallel: 6        # keep concurrent ingest POSTs under the WAF's radar
       matrix:
-        spider: [greenhouse, lever, ashby, smartrecruiters, workday]
+        include:
+          - { spider: greenhouse,      shard: 1, shards: 2 }
+          - { spider: greenhouse,      shard: 2, shards: 2 }
+          - { spider: ashby,           shard: 1, shards: 2 }
+          - { spider: ashby,           shard: 2, shards: 2 }
+          - { spider: lever,           shard: 1, shards: 1 }
+          - { spider: smartrecruiters, shard: 1, shards: 1 }
+          - { spider: workday,         shard: 1, shards: 6 }
+          - { spider: workday,         shard: 2, shards: 6 }
+          - { spider: workday,         shard: 3, shards: 6 }
+          - { spider: workday,         shard: 4, shards: 6 }
+          - { spider: workday,         shard: 5, shards: 6 }
+          - { spider: workday,         shard: 6, shards: 6 }
     defaults:
       run:
         working-directory: scraper
@@ -114,10 +130,13 @@ jobs:
           name: sources
           path: scraper
 
-      - name: Crawl ${{ matrix.spider }}
+      - name: Crawl ${{ matrix.spider }} (shard ${{ matrix.shard }}/${{ matrix.shards }})
         env:
           SOURCES_FILE: sources.json
+          SHARD_TOTAL: ${{ matrix.shards }}
+          SHARD_INDEX: ${{ matrix.shard }}
         run: |
+          export SHARD_INDEX=$((SHARD_INDEX - 1))   # matrix is 1-based, loader 0-based
           set -o pipefail
           timeout -k 60 3600 python -m scrapy crawl ${{ matrix.spider }} 2>&1 | tee crawl.log
           # The loader must have RUN (it logs "Loaded N active" even for N=0).

@@ -11,6 +11,7 @@ Usage:
 
 import argparse
 import logging
+import json
 import re
 import sys
 
@@ -52,13 +53,45 @@ def extract_urls_from_markdown(text: str) -> list[str]:
     return ats_urls
 
 
+def extract_urls_from_listings_json(text: str) -> list[str]:
+    """
+    Extract ATS URLs from a SimplifyJobs-style listings.json (a list of
+    {"url", "company_name", "active", "is_visible", ...}). Only live, visible
+    postings count — the file keeps every posting ever listed, so regexing
+    the raw text would resurrect thousands of dead boards.
+    """
+    try:
+        rows = json.loads(text)
+    except (ValueError, TypeError):
+        return []
+    if not isinstance(rows, list):
+        return []
+    live = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if not row.get("active") or row.get("is_visible") is False:
+            continue
+        url = row.get("url") or ""
+        if url:
+            live.append(url)
+    return extract_urls_from_markdown("\n".join(live))
+
+
+def extract_urls(text: str, source_url: str) -> list[str]:
+    """Pick the extractor by file type: listings JSON or markdown."""
+    if source_url.lower().endswith(".json"):
+        return extract_urls_from_listings_json(text)
+    return extract_urls_from_markdown(text)
+
+
 def fetch_github_raw(url: str) -> str:
     """Fetch raw content from a GitHub URL (converts to raw if needed)."""
     # Convert github.com URL to raw.githubusercontent.com
     url = url.replace("github.com", "raw.githubusercontent.com")
     url = url.replace("/blob/", "/")
 
-    resp = requests.get(url, timeout=30)
+    resp = requests.get(url, timeout=60)
     resp.raise_for_status()
     return resp.text
 

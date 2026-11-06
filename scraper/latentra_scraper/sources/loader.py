@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import time
+import zlib
 
 import requests
 from dotenv import load_dotenv
@@ -28,6 +29,24 @@ _BACKOFF_SECONDS = 10  # exponential: 10, 20, 40, 80, 160s (~5 min horizon)
 SOURCE_TYPES = ["greenhouse", "lever", "workday", "ashby", "smartrecruiters"]
 
 
+def _apply_shard(sources: list[dict]) -> list[dict]:
+    """
+    Keep only this shard's slice when SHARD_TOTAL > 1 (set per CI matrix job).
+    Assignment is a stable hash of the slug, so a company always lands in the
+    same shard and every company lands in exactly one shard.
+    """
+    total = int(os.environ.get("SHARD_TOTAL", "1") or 1)
+    if total <= 1:
+        return sources
+    index = int(os.environ.get("SHARD_INDEX", "0") or 0)
+    kept = [
+        s for s in sources
+        if zlib.crc32(str(s.get("company_slug", "")).encode()) % total == index
+    ]
+    logger.info(f"Shard {index + 1}/{total}: {len(kept)} of {len(sources)} sources")
+    return kept
+
+
 def get_active_sources(source_type: str) -> list[dict]:
     """
     Return active sources for a source_type (greenhouse, lever, workday, ...)
@@ -46,7 +65,7 @@ def get_active_sources(source_type: str) -> list[dict]:
     if sources_file:
         with open(sources_file, encoding="utf-8") as f:
             data = json.load(f)
-        sources = data.get(source_type, [])
+        sources = _apply_shard(data.get(source_type, []))
         logger.info(f"Loaded {len(sources)} active {source_type} sources from {sources_file}")
         return sources
 
@@ -68,7 +87,7 @@ def get_active_sources(source_type: str) -> list[dict]:
             )
             resp.raise_for_status()
             data = resp.json()
-            sources = data.get("sources", [])
+            sources = _apply_shard(data.get("sources", []))
             logger.info(f"Loaded {len(sources)} active {source_type} sources from API")
             return sources
         except Exception as e:
