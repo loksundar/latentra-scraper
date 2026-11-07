@@ -19,10 +19,12 @@ name: Scheduled job crawl
 
 on:
   schedule:
-    # 4 runs/day at 6am, 9am, 12pm, 3pm Eastern — covers the East- and
+    # 4 runs/day at about 6am, 9am, 12pm, 3pm Eastern — covers the East- and
     # West-coast posting waves. Cron is UTC (EDT = UTC-4); during EST
-    # (winter) runs land an hour earlier in local time.
-    - cron: "0 10,13,16,19 * * *"
+    # (winter) runs land an hour earlier in local time. Minute 7, not 0:
+    # GitHub delays and drops top-of-the-hour schedules most. If one is
+    # dropped anyway, crawl-watchdog.yml starts a crawl after a 5 h gap.
+    - cron: "7 10,13,16,19 * * *"
   workflow_dispatch: {}      # manual trigger from the Actions tab
 
 concurrency:

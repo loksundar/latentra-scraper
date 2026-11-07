@@ -1,0 +1,48 @@
+# Crawl watchdog — makes "4 crawls a day" actually happen.
+#
+# GitHub delays `schedule:` runs by hours at busy times and sometimes drops
+# them entirely (Nov 2026: only 2 of 4 scheduled crawls a day started, up to
+# 3 h late). This tiny hourly job starts a crawl whenever none has started in
+# MAX_GAP_HOURS and none is queued or running. Cheap: one API call an hour,
+# free on a public repo. Its own runs may also be delayed or dropped, but with
+# 24 chances a day the gap stays bounded.
+
+name: Crawl watchdog
+
+on:
+  schedule:
+    - cron: "23 * * * *"   # every hour at :23 (off the busy top of the hour)
+  workflow_dispatch: {}
+
+permissions:
+  actions: write
+
+concurrency:
+  group: crawl-watchdog
+  cancel-in-progress: true
+
+env:
+  MAX_GAP_HOURS: "5"
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Start a crawl if the last one is too old
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -eu
+          busy=$(gh run list -R "$REPO" -w crawl.yml -L 20 --json status \
+                   --jq '[.[] | select(.status != "completed")] | length')
+          if [ "$busy" -gt 0 ]; then echo "a crawl is queued or running ($busy) — nothing to do"; exit 0; fi
+          last=$(gh run list -R "$REPO" -w crawl.yml -L 1 --json createdAt --jq '.[0].createdAt // ""')
+          if [ -n "$last" ]; then
+            age=$(( ( $(date +%s) - $(date -d "$last" +%s) ) / 60 ))
+            echo "last crawl started $last (${age} min ago), limit $((MAX_GAP_HOURS * 60)) min"
+            if [ "$age" -lt $((MAX_GAP_HOURS * 60)) ]; then exit 0; fi
+          fi
+          echo "::warning::no crawl for over ${MAX_GAP_HOURS}h — starting one"
+          gh workflow run crawl.yml -R "$REPO" --ref "${{ github.event.repository.default_branch }}"

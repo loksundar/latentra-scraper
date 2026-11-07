@@ -47,7 +47,7 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -u
-          for wf in crawl.yml discover.yml keepalive.yml rerun-failed.yml; do
+          for wf in crawl.yml discover.yml keepalive.yml rerun-failed.yml crawl-watchdog.yml; do
             state=$(gh api "repos/$REPO/actions/workflows/$wf" --jq .state 2>/dev/null || echo missing)
             if [ "$state" = "missing" ]; then
               echo "skip $wf (not found)"
