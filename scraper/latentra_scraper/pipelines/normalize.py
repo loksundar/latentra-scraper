@@ -6,12 +6,37 @@ Enrichment (skills, seniority, location, platforms) is in EnrichPipeline.
 
 import html as html_module
 import re
+import unicodedata
+
+_TITLE_WS = {" ", "\t", "\n", "\r"}
+
+
+def clean_title(title: str) -> str:
+    """
+    Drop private-use glyphs (Apple prefixes some titles with its U+F8FF logo),
+    control and format characters, then collapse every whitespace run to one
+    space (a live Amazon title carried an embedded newline: "... Experiences
+    \\n, 3PX"). Returns "" when nothing printable is left.
+    """
+    kept = "".join(
+        c for c in title
+        if c in _TITLE_WS or unicodedata.category(c) not in ("Co", "Cc", "Cf")
+    )
+    return re.sub(r"\s+", " ", kept).strip()
 
 
 class NormalizePipeline:
     """Clean and normalize job items coming from any spider."""
 
     def process_item(self, item, spider):
+        # Title: one line of printable text. Keep the original when the cleanup
+        # would leave nothing — the validator already required a non-empty title.
+        title = item.get("title")
+        if isinstance(title, str):
+            cleaned = clean_title(title)
+            if cleaned:
+                item["title"] = cleaned
+
         # Strip HTML → plain text
         raw_html = item.get("description_html") or ""
         if not item.get("description_text"):

@@ -382,3 +382,51 @@ def test_heartbeats_abort_after_consecutive_failures(monkeypatch):
     hb_slugs = {b["company_slug"] for b in sent if b.get("heartbeat")}
     assert len(hb_slugs) == ingest_mod.HEARTBEAT_ABORT_AFTER
     assert len(sent) == ingest_mod.HEARTBEAT_ABORT_AFTER * ingest_mod.HEARTBEAT_RETRIES
+
+
+# ── Round 5: live spot-crawl findings ────────────────────────────────────────
+
+def test_normalize_collapses_title_whitespace_and_private_use_glyphs():
+    from latentra_scraper.pipelines.normalize import NormalizePipeline
+    # Live Amazon title with an embedded newline
+    item = JobItem(title="Senior Product Manager - Tech, Private Pricing Programs & Experiences \n, 3PX",
+                   description_html="<p>x</p>")
+    NormalizePipeline().process_item(item, None)
+    assert item["title"] == "Senior Product Manager - Tech, Private Pricing Programs & Experiences , 3PX"
+    # Live Apple title prefixed with the U+F8FF logo glyph
+    item = JobItem(title=" Speech Processing ML Algorithm Engineer", description_html="<p>x</p>")
+    NormalizePipeline().process_item(item, None)
+    assert item["title"] == "Speech Processing ML Algorithm Engineer"
+    # Nothing printable left: keep the original rather than send "" to ingest
+    item = JobItem(title="", description_html="<p>x</p>")
+    NormalizePipeline().process_item(item, None)
+    assert item["title"] == ""
+    # Ordinary titles are untouched
+    item = JobItem(title="Staff Software Engineer, Payments", description_html="<p>x</p>")
+    NormalizePipeline().process_item(item, None)
+    assert item["title"] == "Staff Software Engineer, Payments"
+
+
+@pytest.mark.parametrize("raw,state,city", [
+    ("Remote Washington", "WA", None),      # live Adobe/Workday row: had no state or country
+    ("Remote California", "CA", None),
+    ("Remote in Texas", "TX", None),
+    ("Hybrid New York", "NY", None),
+    ("Remote Seattle", "WA", "Seattle"),
+])
+def test_mode_word_glued_to_a_place_is_a_us_location(raw, state, city):
+    from latentra_scraper.enrichment.location import normalize_location
+    r = normalize_location(raw)
+    assert (r["location_state"], r["location_city"]) == (state, city)
+    assert r["location_country"] == "United States"
+    assert r["is_remote_friendly"] is (raw.lower().startswith("remote"))
+
+
+def test_mode_word_without_a_place_stays_unknown():
+    from latentra_scraper.enrichment.location import normalize_location
+    for raw in ("Remote", "Remote or Hybrid", "Remote - US", "Anywhere"):
+        r = normalize_location(raw)
+        assert r["location_state"] is None and r["location_city"] is None, raw
+    r = normalize_location("Remote in Canada")
+    assert r["location_state"] is None and r["location_country"] == "Canada"
+    assert normalize_location("Remote - US")["location_country"] == "United States"

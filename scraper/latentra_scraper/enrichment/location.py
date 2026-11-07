@@ -135,6 +135,14 @@ _NEGATION_BEFORE = re.compile(r"\b(?:not|no|isn't|is not|cannot|can't|unable|nev
 
 _SPLIT = re.compile(r"\s*[,;/|()&–—-]\s*|\s+(?:and|or)\s+", re.I)
 
+# Work-arrangement words glued to a place without a separator: "Remote
+# Washington", "Remote in Texas", "Hybrid Seattle" (Workday tenants such as
+# Adobe). Removing them leaves the place name for the state / city lookup.
+_MODE_WORDS = re.compile(
+    r"\b(?:remote|hybrid|on-?site|work from home|wfh|anywhere|distributed|in|from|based|only|within)\b",
+    re.I,
+)
+
 
 def _is_state(part_raw: str):
     """2-letter code for a part that names a US state, else None."""
@@ -227,6 +235,24 @@ def normalize_location(location_raw: str, title: str = "", description_text: str
     parts = [p.strip() for p in _SPLIT.split(raw) if p and p.strip(" .")]
     if not parts:
         return result
+
+    # One token that is a place only once the work-mode words are removed:
+    # "Remote Washington" → WA. Seen live (Adobe/Workday): the validator
+    # accepted the row as US, but it reached the site with no state or country.
+    # A state NAME (or an upper-case code) is taken as the state — "Remote
+    # Washington" means the state, not the district; a known city or a country
+    # goes through the normal lookup below.
+    if len(parts) == 1 and _is_state(parts[0]) is None and _is_country(parts[0]) is None:
+        bare = re.sub(r"\s+", " ", _MODE_WORDS.sub(" ", parts[0])).strip(" -–—/,().")
+        if bare and bare.lower() != parts[0].strip("() .").lower():
+            state = _is_state(bare) if (len(bare) > 2 or bare.isupper()) else None
+            if state:
+                result["location_state"] = state
+                result["location_country"] = "United States"
+                return result
+            if bare.lower() in US_CITY_STATE or _is_country(bare):
+                parts = [bare]
+
     states = [_is_state(p) for p in parts]
     countries = [_is_country(p) for p in parts]
 
