@@ -100,7 +100,9 @@ jobs:
           - { spider: ashby,           shard: 1, shards: 2 }
           - { spider: ashby,           shard: 2, shards: 2 }
           - { spider: lever,           shard: 1, shards: 1 }
-          - { spider: smartrecruiters, shard: 1, shards: 1 }
+          - { spider: smartrecruiters, shard: 1, shards: 3 }
+          - { spider: smartrecruiters, shard: 2, shards: 3 }
+          - { spider: smartrecruiters, shard: 3, shards: 3 }
           - { spider: workable,        shard: 1, shards: 1 }
           - { spider: rippling,        shard: 1, shards: 1 }
           - { spider: gem,             shard: 1, shards: 1 }

@@ -67,12 +67,12 @@ class SmartRecruitersSpider(BaseJobSpider):
 
     def parse(self, response, source, offset=0):
         data = self.safe_json_parse(response.text)
-        if not isinstance(data, dict):
-            self.logger.error(f"[{source['company_slug']}] Invalid JSON response")
+        # A listing page always has a "content" list (empty for 0 postings).
+        # {"message": "..."} error objects must not count as a clean empty check.
+        if not isinstance(data, dict) or not isinstance(data.get("content"), list):
+            self.mark_source_failed(response, "Invalid JSON response (no content list)")
             return
-        content = data.get("content") or []
-        if not isinstance(content, list):
-            content = []
+        content = data["content"]
         slug = source["company_slug"]
         self.logger.info(f"[{slug}] offset={offset}, got {len(content)} postings (total: {data.get('totalFound')})")
 
@@ -103,6 +103,11 @@ class SmartRecruitersSpider(BaseJobSpider):
             if self.skip_from_listing(_label(posting.get("name")),
                                       loc.get("fullLocation") or self._location(loc) or "",
                                       _label(loc.get("country"))):
+                self.count_prefiltered()
+                continue
+            # releasedDate is on the listing row — don't fetch details for
+            # postings the validator will drop as older than MAX_JOB_AGE_DAYS.
+            if self.skip_old_from_listing(posting.get("releasedDate")):
                 self.count_prefiltered()
                 continue
             if _dict(_dict(posting.get("jobAd")).get("sections")):
@@ -146,8 +151,13 @@ class SmartRecruitersSpider(BaseJobSpider):
 
     @staticmethod
     def _location(loc: dict):
+        # The API's own "San Jose, CA, United States" beats re-joining the
+        # parts, which leaves the lowercase ISO code ("San Jose, CA, us").
+        full = loc.get("fullLocation")
+        if isinstance(full, str) and full.strip():
+            return full.strip()
         parts = [_label(loc.get(k)) for k in ("city", "region", "country")]
-        parts = [p for p in parts if p]
+        parts = [p.upper() if len(p) == 2 else p for p in parts if p]
         return ", ".join(parts) if parts else None
 
     @staticmethod

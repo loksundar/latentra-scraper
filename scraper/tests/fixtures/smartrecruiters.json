@@ -6,7 +6,7 @@
     {
       "id": "744000012",
       "name": "Security Analyst",
-      "releasedDate": "2026-06-10T08:00:00.000Z",
+      "releasedDate": "2099-06-10T08:00:00.000Z",
       "location": {"city": "Austin", "region": "TX", "country": "us", "remote": true},
       "typeOfEmployment": "Full-time",
       "department": {"id": "9", "label": "Security"},

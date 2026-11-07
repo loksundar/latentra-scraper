@@ -10,7 +10,7 @@ import scrapy
 
 from latentra_scraper.sources.loader import get_active_sources
 
-_US_COUNTRY_CODES = {"US", "USA", "UNITED STATES"}
+_US_COUNTRY_CODES = {"US", "USA", "U.S", "U.S.A", "UNITED STATES", "UNITED STATES OF AMERICA"}
 
 
 class BaseJobSpider(scrapy.Spider):
@@ -74,6 +74,39 @@ class BaseJobSpider(scrapy.Spider):
         mark_failed(self, request)
         self.logger.error(f"Request failed: {request.url} — {failure.value}")
 
+    def mark_source_failed(self, response, why: str = ""):
+        """
+        Record that this company's crawl is NOT trustworthy this run and log why.
+
+        Call it from any callback branch that gives up on a 2xx body (JSON that
+        isn't the listing we expected: an error object, a missing container key,
+        a WAF/interstitial page). Returning silently from such a branch would
+        let CompanyReachMiddleware count the company as "checked cleanly", and
+        the ingest pipeline would then heartbeat it (or sweep its jobs as
+        stale) on the strength of a broken response.
+        """
+        from latentra_scraper.middlewares import mark_failed
+        request = getattr(response, "request", None) or response
+        mark_failed(self, request)
+        if why:
+            src = (getattr(request, "cb_kwargs", None) or {}).get("source") or {}
+            slug = src.get("company_slug") if isinstance(src, dict) else None
+            self.logger.error(f"[{slug or self.name}] {why}")
+
+    @staticmethod
+    def is_non_us_country(value) -> bool:
+        """
+        True when an ATS-supplied country code/name is clearly NOT the United
+        States ("GB", "Canada", "Greece"). Empty / non-string / unknown values
+        return False so the location-text heuristics still get their say.
+        """
+        if not isinstance(value, str):
+            return False
+        v = value.strip().upper().rstrip(".")
+        if not v:
+            return False
+        return v not in _US_COUNTRY_CODES
+
     # ── Listing prefilter ────────────────────────────
     # For ATSs that need one detail request per job (Workday, Rippling,
     # Oracle), apply ValidatePipeline's title and US rules to the listing row
@@ -85,10 +118,11 @@ class BaseJobSpider(scrapy.Spider):
             NON_IT_TITLE_PATTERNS,
             ValidatePipeline,
         )
-        title = title or ""
+        title = title if isinstance(title, str) else ""
+        location = location if isinstance(location, str) else ""
         if NON_IT_TITLE_PATTERNS.search(title) and not IT_TITLE_PATTERNS.search(title):
             return True
-        if country and country.strip().upper() not in _US_COUNTRY_CODES:
+        if self.is_non_us_country(country):
             return True
         checker = getattr(self, "_us_checker", None)
         if checker is None:
@@ -96,6 +130,26 @@ class BaseJobSpider(scrapy.Spider):
         if not checker._is_likely_us({"location": location or ""}):
             return True
         return False
+
+    def skip_old_from_listing(self, posted) -> bool:
+        """
+        True when a listing row's own date already fails ValidatePipeline's
+        MAX_JOB_AGE_DAYS rule, so its detail fetch would be wasted. Accepts ISO
+        datetimes ("2017-09-12T21:27:42.000Z") or plain dates ("2026-11-07");
+        unparseable / missing dates return False (fetch and let the validator
+        decide). Seen live: a SmartRecruiters tenant with 1,342 postings from
+        2017 cost 767 detail requests that were all dropped as too old.
+        """
+        from latentra_scraper.pipelines.validate import ValidatePipeline
+        if not isinstance(posted, str) or not posted.strip():
+            return False
+        iso = self.safe_datetime_iso(posted) if len(posted.strip()) > 10 else f"{posted.strip()} 00:00:00"
+        if not iso:
+            return False
+        checker = getattr(self, "_us_checker", None)
+        if checker is None:
+            checker = self._us_checker = ValidatePipeline()
+        return checker._is_too_old(iso)
 
     def count_prefiltered(self):
         if getattr(self, "crawler", None):

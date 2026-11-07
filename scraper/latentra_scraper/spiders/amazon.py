@@ -62,11 +62,13 @@ class AmazonSpider(BaseJobSpider):
 
     def parse_page(self, response, source, category, offset):
         data = self.safe_json_parse(response.text)
-        if not isinstance(data, dict):
-            self.logger.error(f"[amazon/{category}] Invalid JSON")
+        # A good page is {"error": null, "hits": N, "jobs": [...]}. An error
+        # string or a missing jobs list is a failed category, not an empty one.
+        if not isinstance(data, dict) or data.get("error") or not isinstance(data.get("jobs"), list):
+            self.mark_source_failed(response, f"[amazon/{category}] Invalid search response")
             return
-        jobs = data.get("jobs") or []
-        hits = data.get("hits") or 0
+        jobs = [j for j in data["jobs"] if isinstance(j, dict)]
+        hits = data.get("hits") if isinstance(data.get("hits"), int) else 0
         if offset == 0:
             self.logger.info(f"[amazon/{category}] Total jobs: {hits}")
 

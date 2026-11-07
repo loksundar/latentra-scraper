@@ -1,0 +1,83 @@
+[
+ {
+  "additionalPlain": "Salary\n \nThe estimated salary range for this position is estimated to be $135,000 - $200,000/year. Total compensation fo",
+  "additional": "<div><strong style=\"font-size: 18px;\">Salary</strong></div>\n<div>&nbsp;</div>\n<div>The estimated salary range for this p",
+  "categories": {
+   "commitment": "Full-time",
+   "location": "New York, NY",
+   "team": "Dev",
+   "allLocations": [
+    "New York, NY"
+   ]
+  },
+  "createdAt": 1710191082166,
+  "descriptionPlain": "A World-Changing Company\n \nPalantir builds the world’s leading software for data-driven decisions and operations. By bri",
+  "description": "<div><strong><span style=\"font-size: 18px;\">A World-Changing Company</span></strong></div>\n<div>&nbsp;</div>\n<div>Palant",
+  "id": "ab7e3425-81d5-4705-a7b5-cd60c8a45cdb",
+  "lists": [
+   {
+    "text": "Core Responsiblities",
+    "content": "\n<li>Architecting, developing, and maintaining high-performance, scalable backend services that underpin our our operati"
+   }
+  ],
+  "text": "Backend Software Engineer - Application Development",
+  "country": "US",
+  "workplaceType": "hybrid",
+  "opening": "<div><strong><span style=\"font-size: 18px;\">A World-Changing Company</span></strong></div>\n<div>&nbsp;</div>\n<div>Palant",
+  "openingPlain": "A World-Changing Company\n \nPalantir builds the world’s leading software for data-driven decisions and operations. By bri",
+  "descriptionBody": "<div><strong style=\"font-size: 18px;\">The Role</strong></div>\n<div>&nbsp;</div>\n<div><strong>Backend Software Engineers<",
+  "descriptionBodyPlain": "The Role\n \nBackend Software Engineers at Palantir build software at scale to transform how organisations use data. Our S",
+  "hostedUrl": "https://jobs.lever.co/palantir/ab7e3425-81d5-4705-a7b5-cd60c8a45cdb",
+  "applyUrl": "https://jobs.lever.co/palantir/ab7e3425-81d5-4705-a7b5-cd60c8a45cdb/apply"
+ },
+ {
+  "additionalPlain": "Life at Palantir\n \nWe want every Palantirian to achieve their best outcomes, that’s why we celebrate individuals’ streng",
+  "additional": "<div><strong><span style=\"font-size: 18px;\">Life at Palantir</span></strong></div>\n<div>&nbsp;</div>\n<div>We want every ",
+  "categories": {
+   "commitment": "Full-time",
+   "location": "London, United Kingdom",
+   "team": "Dev",
+   "allLocations": [
+    "London, United Kingdom"
+   ]
+  },
+  "createdAt": 1710188707256,
+  "descriptionPlain": "A World-Changing Company\n \nPalantir builds the world’s leading software for data-driven decisions and operations. By bri",
+  "description": "<div><strong><span style=\"font-size: 18px;\">A World-Changing Company</span></strong></div>\n<div>&nbsp;</div>\n<div>Palant",
+  "id": "10dfc8bc-99ad-4ca2-ab76-853cb90a92c2",
+  "lists": [
+   {
+    "text": "Core Responsiblities",
+    "content": "\n<li>Architecting, developing, and maintaining high-performance, scalable backend services that underpin our our operati"
+   }
+  ],
+  "text": "Backend Software Engineer - Application Development",
+  "country": "GB",
+  "workplaceType": "hybrid",
+  "opening": "<div><strong><span style=\"font-size: 18px;\">A World-Changing Company</span></strong></div>\n<div>&nbsp;</div>\n<div>Palant",
+  "openingPlain": "A World-Changing Company\n \nPalantir builds the world’s leading software for data-driven decisions and operations. By bri",
+  "descriptionBody": "<div><strong style=\"font-size: 18px;\">The Role</strong></div>\n<div>&nbsp;</div>\n<div><strong>Backend Software Engineers<",
+  "descriptionBodyPlain": "The Role\n \nBackend Software Engineers at Palantir build software at scale to transform how organisations use data. Our S",
+  "hostedUrl": "https://jobs.lever.co/palantir/10dfc8bc-99ad-4ca2-ab76-853cb90a92c2",
+  "applyUrl": "https://jobs.lever.co/palantir/10dfc8bc-99ad-4ca2-ab76-853cb90a92c2/apply"
+ },
+ {
+  "additionalPlain": "Salary\n \nThe estimated salary range for this position is estimated to be $135,000 - $200,000/year. Total compensation fo",
+  "additional": null,
+  "categories": null,
+  "createdAt": 1710191082166,
+  "descriptionPlain": "A World-Changing Company\n \nPalantir builds the world’s leading software for data-driven decisions and operations. By bri",
+  "description": null,
+  "id": "drift-1",
+  "lists": null,
+  "text": "Data Engineer (drifted row)",
+  "country": "US",
+  "workplaceType": null,
+  "opening": "<div><strong><span style=\"font-size: 18px;\">A World-Changing Company</span></strong></div>\n<div>&nbsp;</div>\n<div>Palant",
+  "openingPlain": "A World-Changing Company\n \nPalantir builds the world’s leading software for data-driven decisions and operations. By bri",
+  "descriptionBody": "<div><strong style=\"font-size: 18px;\">The Role</strong></div>\n<div>&nbsp;</div>\n<div><strong>Backend Software Engineers<",
+  "descriptionBodyPlain": "The Role\n \nBackend Software Engineers at Palantir build software at scale to transform how organisations use data. Our S",
+  "hostedUrl": "https://jobs.lever.co/palantir/ab7e3425-81d5-4705-a7b5-cd60c8a45cdb",
+  "applyUrl": "https://jobs.lever.co/palantir/ab7e3425-81d5-4705-a7b5-cd60c8a45cdb/apply"
+ }
+]

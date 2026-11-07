@@ -1,0 +1,66 @@
+{
+ "name": "Blueground",
+ "description": "",
+ "jobs": [
+  {
+   "title": "Client Experience Coordinator (English & Greek Speaker) - Talent Pool",
+   "shortcode": "186545F8C1",
+   "code": null,
+   "employment_type": "Full-time",
+   "telecommuting": false,
+   "department": "Shared Services",
+   "url": "https://apply.workable.com/j/186545F8C1",
+   "shortlink": "https://apply.workable.com/j/186545F8C1",
+   "application_url": "https://apply.workable.com/j/186545F8C1/apply",
+   "published_on": "2026-02-12",
+   "created_at": "2025-09-30",
+   "country": "Greece",
+   "city": "Athens",
+   "state": "Attica",
+   "education": null,
+   "experience": "Associate",
+   "function": "Customer Service",
+   "industry": "Real Estate",
+   "locations": [
+    {
+     "country": "Greece",
+     "countryCode": "GR",
+     "city": "Athens",
+     "region": "Attica",
+     "hidden": false
+    }
+   ],
+   "description": "<h3>🌍 Redefining how people live.</h3><p>At <strong>Blueground,</strong> we believe that when your base is reliable, the world opens up. That’s why we’re buildi"
+  },
+  {
+   "title": "Senior Data Engineer",
+   "shortcode": "US12345",
+   "code": null,
+   "employment_type": "Full-time",
+   "telecommuting": false,
+   "department": "Shared Services",
+   "url": "https://apply.workable.com/j/US12345",
+   "shortlink": "https://apply.workable.com/j/186545F8C1",
+   "application_url": "https://apply.workable.com/j/186545F8C1/apply",
+   "published_on": "2026-02-12",
+   "created_at": "2025-09-30",
+   "country": "United States",
+   "city": "New York",
+   "state": "New York",
+   "education": null,
+   "experience": "Associate",
+   "function": "Customer Service",
+   "industry": "Real Estate",
+   "locations": [
+    {
+     "country": "United States",
+     "countryCode": "US",
+     "city": "New York",
+     "region": "New York",
+     "hidden": false
+    }
+   ],
+   "description": "<h3>🌍 Redefining how people live.</h3><p>At <strong>Blueground,</strong> we believe that when your base is reliable, the world opens up. That’s why we’re buildi"
+  }
+ ]
+}

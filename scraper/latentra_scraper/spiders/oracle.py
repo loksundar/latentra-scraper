@@ -62,20 +62,33 @@ class OracleSpider(BaseJobSpider):
     def parse_listing(self, response, source, host, site, offset):
         data = self.safe_json_parse(response.text)
         slug = source["company_slug"]
-        items = (data or {}).get("items") or []
-        if not items:
-            self.logger.error(f"[{slug}] Invalid Oracle listing response")
+        items = data.get("items") if isinstance(data, dict) else None
+        # The finder always returns one search block (TotalJobsCount may be 0);
+        # no block means an error payload, not an empty site.
+        if not isinstance(items, list) or not items or not isinstance(items[0], dict):
+            self.mark_source_failed(response, "Invalid Oracle listing response")
             return
         block = items[0]
-        total = block.get("TotalJobsCount") or 0
-        reqs = block.get("requisitionList") or []
+        total = block.get("TotalJobsCount")
+        if not isinstance(total, int):
+            total = 0
+        reqs = block.get("requisitionList")
+        if not isinstance(reqs, list):
+            reqs = []
         if offset == 0:
             self.logger.info(f"[{slug}] Total jobs: {total}")
 
+        all_old = bool(reqs)   # listing is newest-first: a page of only-old rows ends paging
         for req in reqs:
+            if not isinstance(req, dict):
+                continue
             req_id = req.get("Id")
             if not req_id:
                 continue
+            if self.skip_old_from_listing(req.get("PostedDate")):
+                self.count_prefiltered()
+                continue
+            all_old = False
             if self.skip_from_listing(req.get("Title"), req.get("PrimaryLocation"),
                                       req.get("PrimaryLocationCountry") or ""):
                 self.count_prefiltered()
@@ -90,7 +103,7 @@ class OracleSpider(BaseJobSpider):
             )
 
         next_offset = offset + self.PAGE_SIZE
-        if reqs and next_offset < total and next_offset < self.PAGE_SIZE * self.MAX_PAGES:
+        if reqs and not all_old and next_offset < total and next_offset < self.PAGE_SIZE * self.MAX_PAGES:
             yield scrapy.Request(
                 self._list_url(host, site, next_offset),
                 headers={"Accept": "application/json"},
@@ -101,25 +114,26 @@ class OracleSpider(BaseJobSpider):
 
     def parse_detail(self, response, source, host, site, listing):
         data = self.safe_json_parse(response.text)
-        items = (data or {}).get("items") or []
-        if not items:
+        listing = listing if isinstance(listing, dict) else {}
+        items = data.get("items") if isinstance(data, dict) else None
+        if not isinstance(items, list) or not items or not isinstance(items[0], dict):
             self.logger.warning(f"[{source['company_slug']}] No detail for {listing.get('Title', '?')}")
             return
         d = items[0]
 
         description_html = "".join(
-            d.get(k) or "" for k in (
+            d.get(k) for k in (
                 "ExternalDescriptionStr", "ExternalResponsibilitiesStr",
                 "ExternalQualificationsStr", "CorporateDescriptionStr",
-            )
+            ) if isinstance(d.get(k), str)
         )
 
-        workplace = (d.get("WorkplaceType") or listing.get("WorkplaceTypeCode") or "").lower()
+        workplace = self.safe_text(d.get("WorkplaceType") or listing.get("WorkplaceTypeCode")).lower()
         remote_type = ("remote" if "remote" in workplace else
                        "hybrid" if "hybrid" in workplace else
                        "onsite" if "site" in workplace else "unknown")
 
-        schedule = (d.get("JobSchedule") or "").lower()
+        schedule = self.safe_text(d.get("JobSchedule")).lower()
         employment_type = ("full_time" if "full" in schedule else
                            "part_time" if "part" in schedule else "unknown")
 
@@ -130,9 +144,9 @@ class OracleSpider(BaseJobSpider):
             title=self.safe_text(d.get("Title") or listing.get("Title")),
             company=self.company_display_name(source),
             company_slug=source["company_slug"],
-            department=d.get("Organization") or d.get("Department") or listing.get("JobFamily"),
+            department=self.safe_text(d.get("Organization") or d.get("Department") or listing.get("JobFamily")) or None,
             seniority="unknown",
-            location=d.get("PrimaryLocation") or listing.get("PrimaryLocation") or "",
+            location=self.safe_text(d.get("PrimaryLocation") or listing.get("PrimaryLocation")),
             remote_type=remote_type,
             employment_type=employment_type,
             salary_min=None,

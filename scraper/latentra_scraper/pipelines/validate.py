@@ -224,6 +224,13 @@ class ValidatePipeline:
             if city in loc_lower:
                 return True
 
+        # Canadian province codes after a comma ("Markham, ON", "Vancouver, BC")
+        # look exactly like the US "City, ST" pattern but none of these codes
+        # is a US state — checked after the US signals so "..., ON, United
+        # States" style strings are unaffected.
+        if re.search(r',\s*(ON|QC|BC|AB|MB|SK|NS|NB|NL|PE|YT|NT|NU)\b', location):
+            return False
+
         # "Remote" with no country qualifier = allow through (likely US)
         if loc_lower in ('remote', 'remote, us', 'remote - us', 'anywhere'):
             return True

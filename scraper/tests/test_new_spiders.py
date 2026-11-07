@@ -27,6 +27,8 @@ class TestWorkable:
     def test_field_mapping(self, source):
         items = self._items(source)
         assert len(items) == 2
+        # third fixture row: remote job whose only region is Canada → prefiltered
+        assert [i["source_job_id"] for i in items] == ["AB12CD34EF", "ZZ99"]
         job = items[0]
         assert isinstance(job, JobItem)
         assert job["source"] == "workable"

@@ -51,6 +51,28 @@
    "experience": "Associate",
    "function": "Information Technology",
    "industry": "Computer Software",
+   "locations": [],
+   "description": "<p>Build things.</p>"
+  },
+  {
+   "title": "Backend Engineer (Remote, Canada)",
+   "shortcode": "CA77",
+   "code": "Corp-197",
+   "employment_type": "Contract",
+   "telecommuting": true,
+   "department": "Engineering",
+   "url": "",
+   "shortlink": "https://apply.workable.com/j/54A244302B",
+   "application_url": "https://apply.workable.com/j/54A244302B/apply",
+   "published_on": "2026-11-01",
+   "created_at": "2022-03-11",
+   "country": "",
+   "city": "",
+   "state": "",
+   "education": "Associate Degree",
+   "experience": "Associate",
+   "function": "Information Technology",
+   "industry": "Computer Software",
    "locations": [
     {
      "country": "Canada",

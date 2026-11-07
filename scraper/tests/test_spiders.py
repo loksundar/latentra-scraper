@@ -223,13 +223,13 @@ class TestSmartRecruiters:
         assert job["source"] == "smartrecruiters"
         assert job["source_job_id"] == "744000012"
         assert job["title"] == "Security Analyst"
-        assert job["location"] == "Austin, TX, us"
+        assert job["location"] == "Austin, TX, US"   # 2-letter ISO code upper-cased
         assert job["remote_type"] == "remote"
         assert job["employment_type"] == "full_time"
         assert job["department"] == "Security"
         # ref link preferred over constructed URL
         assert job["apply_url"] == "https://jobs.smartrecruiters.com/Acme/744000012-security-analyst"
-        assert job["posted_at"] == "2026-06-10 08:00:00"
+        assert job["posted_at"] == "2099-06-10 08:00:00"   # fixture date kept in the future so the age prefilter never trips
 
     def test_description_combines_sections_with_titles(self, source):
         desc = self._items(source)[0]["description_html"]

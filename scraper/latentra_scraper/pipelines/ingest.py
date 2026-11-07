@@ -52,6 +52,13 @@ VALIDATION_DEADLINE_SECONDS = 300
 MAX_SPLIT_DEPTH = 2
 WAF_BLOCK_THRESHOLD = 2
 
+# Heartbeats are best-effort. Each failed one costs ~45s of backoff, and a run
+# can have hundreds of zero-job companies, so when the endpoint is clearly
+# down stop after this many consecutive failures instead of running into the
+# workflow's OS kill.
+HEARTBEAT_ABORT_AFTER = 3
+HEARTBEAT_RETRIES = 2
+
 
 def _check_url(url: str):
     """Return 'alive', 'dead', or 'unknown' for a single URL."""
@@ -179,6 +186,12 @@ class IngestPipeline:
                 f"(stale-job sweep skipped this run)"
             )
 
+        # Same rule per company: if any LISTING request for it failed this run
+        # (page 2 errback, callback exception, WAF page, error JSON), the batch
+        # only holds the pages we did see. Upsert them, but never let the server
+        # sweep the rest as stale on the strength of an incomplete crawl.
+        listing_failed = set(getattr(spider, "companies_listing_failed", set()) or set())
+
         deferred = []  # (company_slug, payload) — batches to re-send after cooldown
         for (source, company_slug), jobs in self.batches.items():
             alive_jobs, dead_ids = self._validate_batch(jobs, spider, company_slug)
@@ -194,6 +207,12 @@ class IngestPipeline:
             }
             if timed_out:
                 payload["partial"] = 1
+            elif (source, company_slug) in listing_failed:
+                payload["partial"] = 1
+                spider.logger.warning(
+                    f"[{company_slug}] a listing request failed this run — "
+                    f"ingesting {len(alive_jobs)} jobs as partial (no stale sweep)"
+                )
 
             ok, ins, upd, deleted = self._send_batch(spider, company_slug, payload)
             if not ok:
@@ -234,8 +253,15 @@ class IngestPipeline:
         failed = set(getattr(spider, "companies_failed", set()) or set())
         heartbeat = sorted(reached - failed - set(self.batches.keys()))
         sent_hb = 0
+        hb_failures = 0
         for source, company_slug in heartbeat:
             if self._waf_blocked():
+                break
+            if hb_failures >= HEARTBEAT_ABORT_AFTER:
+                spider.logger.warning(
+                    f"{hb_failures} consecutive heartbeats failed — skipping the "
+                    f"remaining {len(heartbeat) - sent_hb - hb_failures} (ingest endpoint looks down)"
+                )
                 break
             payload = {
                 "source": source, "company_slug": company_slug, "jobs": [],
@@ -246,10 +272,12 @@ class IngestPipeline:
             }
             if timed_out:
                 payload["partial"] = 1
-            data, status = self._post_batch(spider, company_slug, payload, 2)
+            data, status = self._post_batch(spider, company_slug, payload, HEARTBEAT_RETRIES)
             if status == 200:
                 sent_hb += 1
+                hb_failures = 0
             else:
+                hb_failures += 1
                 spider.logger.warning(f"[{company_slug}] heartbeat not recorded (HTTP {status})")
         if heartbeat:
             spider.logger.info(f"Heartbeats: {sent_hb}/{len(heartbeat)} zero-job companies marked healthy")

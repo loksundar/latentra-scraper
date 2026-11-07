@@ -32,18 +32,20 @@ class AppleSpider(BaseJobSpider):
     MAX_PAGES = 300
 
     def build_requests(self, source):
+        # The token endpoint answers 200 with an EMPTY body (the token is a
+        # header) — tell CompanyReachMiddleware not to treat that as a WAF page.
         yield scrapy.Request(
             f"{BASE}/api/v1/CSRFToken",
             callback=self.got_token,
-            cb_kwargs={"source": source},
+            cb_kwargs={"source": source, "expect_json": False},
             errback=self.handle_error,
             dont_filter=True,
         )
 
-    def got_token(self, response, source):
+    def got_token(self, response, source, expect_json=False):
         token = (response.headers.get(b"x-apple-csrf-token") or b"").decode()
         if not token:
-            self.logger.error("[apple] No CSRF token")
+            self.mark_source_failed(response, "No CSRF token — search cannot run")
             return
         yield self._search(source, token, 1)
 
@@ -64,9 +66,15 @@ class AppleSpider(BaseJobSpider):
         )
 
     def parse_search(self, response, source, token, page):
-        res = (self.safe_json_parse(response.text) or {}).get("res") or {}
-        results = res.get("searchResults") or []
-        total = res.get("totalRecords") or 0
+        data = self.safe_json_parse(response.text)
+        res = data.get("res") if isinstance(data, dict) else None
+        # An expired CSRF session answers 200 with {} / no "res" — that is a
+        # failed search, never "Apple has 0 jobs".
+        if not isinstance(res, dict) or not isinstance(res.get("searchResults"), list):
+            self.mark_source_failed(response, f"Search page {page} returned no results block")
+            return
+        results = [r for r in res["searchResults"] if isinstance(r, dict)]
+        total = res.get("totalRecords") if isinstance(res.get("totalRecords"), int) else 0
         if page == 1:
             self.logger.info(f"[apple] Total jobs: {total}")
         # The token may rotate; prefer the freshest one the server hands back.
@@ -83,17 +91,19 @@ class AppleSpider(BaseJobSpider):
             yield self._search(source, token, page + 1)
 
     def row_to_item(self, row, source):
-        team = ((row.get("team") or {}).get("teamName") or "")
-        loc = (row.get("locations") or [{}])[0]
-        place = loc.get("city") or loc.get("name") or ""  # city is often empty
-        parts = [p for p in (place, loc.get("stateProvince")) if p]
+        team_obj = row.get("team")
+        team = self.safe_text(team_obj.get("teamName") if isinstance(team_obj, dict) else team_obj)
+        locs = row.get("locations")
+        loc = locs[0] if isinstance(locs, list) and locs and isinstance(locs[0], dict) else {}
+        place = self.safe_text(loc.get("city")) or self.safe_text(loc.get("name"))  # city is often empty
+        parts = [p for p in (place, self.safe_text(loc.get("stateProvince"))) if p]
         location = ", ".join(parts + ["United States"]) if parts else "United States"
-        title = row.get("postingTitle") or ""
+        title = self.safe_text(row.get("postingTitle"))
         if team.lower() in SKIP_TEAMS or self.skip_from_listing(title, location):
             return None
 
         pid = row.get("positionId") or row.get("id")
-        summary = row.get("jobSummary") or ""
+        summary = row.get("jobSummary") if isinstance(row.get("jobSummary"), str) else ""
         return JobItem(
             source="apple",
             source_job_id=str(row.get("id") or pid),
@@ -111,6 +121,6 @@ class AppleSpider(BaseJobSpider):
             description_html="<p>" + summary.replace("\n", "<br>") + "</p>" if summary else "",
             tags=None,
             apply_url=f"{BASE}/en-us/details/{pid}/{row.get('transformedPostingTitle') or ''}",
-            posted_at=self.safe_datetime_iso((row.get("postDateInGMT") or "")[:19] + "+00:00")
-                      if row.get("postDateInGMT") else None,
+            posted_at=self.safe_datetime_iso(row["postDateInGMT"][:19] + "+00:00")
+                      if isinstance(row.get("postDateInGMT"), str) and row["postDateInGMT"] else None,
         )

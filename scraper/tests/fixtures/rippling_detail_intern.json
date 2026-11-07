@@ -1,0 +1,58 @@
+{
+ "uuid": "f64b6158-9534-4bab-9457-45556166b262",
+ "name": "Full Stack Software Engineer Intern - Summer 2027",
+ "description": {
+  "company": "<div><body><h2 style='font-family:\"Basel Grotesk\",Arial,sans-serif;line-height:1.6;font-size:15pt;font-weight:600;letter-spacing:0.5px;margin-top:18px;margin-bo",
+  "role": "<div><body><h2 style='font-family:\"Basel Grotesk\",Arial,sans-serif;line-height:1.6;font-size:15pt;font-weight:600;letter-spacing:0.5px;margin-top:18px;margin-bo"
+ },
+ "workLocations": [
+  "San Francisco, CA",
+  "New York, NY",
+  "Seattle, WA"
+ ],
+ "department": {
+  "name": "Eng Interns",
+  "base_department": "Engineering",
+  "department_tree": [
+   "Engineering",
+   "Eng Interns"
+  ]
+ },
+ "employmentType": {
+  "label": "TEMP",
+  "id": "Temporary / Intern"
+ },
+ "createdOn": "2026-09-21T09:23:18.392000-07:00",
+ "eeocQuestionnaireEnabled": true,
+ "eeocQuestionnaireEnabledForJobPost": true,
+ "url": "https://ats.rippling.com/rippling/jobs/f64b6158-9534-4bab-9457-45556166b262",
+ "payRangeDetails": [
+  {
+   "location": "San Francisco Office",
+   "currency": "USD",
+   "frequency": "MONTH",
+   "rangeStart": 10500.0,
+   "rangeEnd": 10500.0,
+   "isRemote": false
+  },
+  {
+   "location": "New York Office",
+   "currency": "USD",
+   "frequency": "MONTH",
+   "rangeStart": 10500.0,
+   "rangeEnd": 10500.0,
+   "isRemote": false
+  },
+  {
+   "location": "Seattle Office",
+   "currency": "USD",
+   "frequency": "MONTH",
+   "rangeStart": 10500.0,
+   "rangeEnd": 10500.0,
+   "isRemote": false
+  }
+ ],
+ "hasAIEvaluationsEnabled": true,
+ "companyName": "Rippling",
+ "unlistedFromSearch": false
+}

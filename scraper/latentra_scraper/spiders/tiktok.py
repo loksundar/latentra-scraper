@@ -76,9 +76,16 @@ class TikTokSpider(BaseJobSpider):
         yield self._req(source, 0)
 
     def parse_page(self, response, source, offset):
-        data = (self.safe_json_parse(response.text) or {}).get("data") or {}
-        posts = data.get("job_post_list") or []
-        total = data.get("count") or 0
+        body = self.safe_json_parse(response.text)
+        data = body.get("data") if isinstance(body, dict) else None
+        # Success is {"code": 0, "data": {"job_post_list": [...], "count": N}}.
+        # A non-zero code / null data is an API error, not an empty board.
+        if (not isinstance(data, dict) or (isinstance(body.get("code"), int) and body["code"] != 0)
+                or not isinstance(data.get("job_post_list"), list)):
+            self.mark_source_failed(response, f"Search page offset={offset} returned an error payload")
+            return
+        posts = data["job_post_list"]
+        total = data.get("count") if isinstance(data.get("count"), int) else 0
         if offset == 0:
             self.logger.info(f"[tiktok] Total jobs (all countries): {total}")
         yield from self.parse_posts(posts, source)
@@ -86,13 +93,23 @@ class TikTokSpider(BaseJobSpider):
         if posts and nxt < total and nxt < self.MAX_OFFSET:
             yield self._req(source, nxt)
 
+    @staticmethod
+    def _en_name(value) -> str:
+        """en_name from a {id, en_name, ...} object, or the value itself if the
+        API ever flattens it to a string."""
+        if isinstance(value, dict):
+            return value.get("en_name") if isinstance(value.get("en_name"), str) else ""
+        return value.strip() if isinstance(value, str) else ""
+
     def parse_posts(self, posts, source):
         for p in posts:
+            if not isinstance(p, dict):
+                continue
             chain = location_chain(p.get("city_info"))
             if not chain or chain[-1].lower() not in US_NAMES:
                 self.count_prefiltered()
                 continue
-            category = ((p.get("job_category") or {}).get("en_name") or "").strip().lower()
+            category = self._en_name(p.get("job_category")).strip().lower()
             if category and category not in TECH_CATEGORIES:
                 self.count_prefiltered()
                 continue
@@ -100,12 +117,12 @@ class TikTokSpider(BaseJobSpider):
             if not post_id:
                 continue
             location = ", ".join(chain[:-1]) + ", US" if len(chain) > 1 else "United States"
-            rtype = ((p.get("recruit_type") or {}).get("en_name") or "").lower()
+            rtype = self._en_name(p.get("recruit_type")).lower()
             employment_type = ("intern" if "intern" in rtype else
                                "full_time" if "regular" in rtype or "full" in rtype else
                                "contract" if "contract" in rtype else "unknown")
-            desc = text_to_html(p.get("description"))
-            if p.get("requirement"):
+            desc = text_to_html(p.get("description") if isinstance(p.get("description"), str) else "")
+            if isinstance(p.get("requirement"), str) and p["requirement"]:
                 desc += "<h3>Qualifications</h3>" + text_to_html(p["requirement"])
 
             yield JobItem(
@@ -114,7 +131,7 @@ class TikTokSpider(BaseJobSpider):
                 title=self.safe_text(p.get("title")),
                 company=source.get("company_name") or "TikTok",
                 company_slug=source["company_slug"],
-                department=(p.get("job_category") or {}).get("en_name"),
+                department=self._en_name(p.get("job_category")) or None,
                 seniority="unknown",
                 location=location,
                 remote_type="unknown",
