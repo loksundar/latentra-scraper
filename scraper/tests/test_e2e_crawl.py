@@ -155,6 +155,11 @@ def test_full_crawl_payload_semantics(tmp_path, mock):
 
     clean = by_slug["clean"]
     assert len(clean["jobs"]) == 1 and "partial" not in clean and "heartbeat" not in clean
+    job = clean["jobs"][0]                      # what jobs-ingest.php binds into the INSERT
+    assert job["is_remote_friendly"] == 0 and job["is_multi_cloud"] == 0 and job["is_platform_heavy"] == 0
+    assert job["location_city"] == "Austin" and job["location_state"] == "TX" and job["location_country"] == "United States"
+    assert job["remote_type"] == "unknown" and job["seniority"] in ("mid", "entry", "senior")
+    assert job["posted_at"] == "2026-11-06 04:00:00"      # 10:00Z → America/Chicago (CST)
 
     boom = by_slug["boom"]                      # first row ingested, but never a sweep
     assert len(boom["jobs"]) == 1 and boom["partial"] == 1

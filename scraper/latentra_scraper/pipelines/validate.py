@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 
 from scrapy.exceptions import DropItem
 
+from latentra_scraper.schema import MAX_LEN_IDENTITY
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,11 +24,15 @@ NON_IT_TITLE_PATTERNS = re.compile(
     r'food\s*service|catering|kitchen|sous\s*chef|line\s*cook|prep\s*cook|'
     # Trades / physical labor
     r'electrician|plumber|carpenter|welder|mechanic|hvac|janitor|custodian|'
-    r'landscap|roofer|mason|painter(?!\s*(ui|ux|product|visual))|'
+    r'landscap\w*|roofer|mason|painter(?!\s*(ui|ux|product|visual))|'
     r'forklift|warehouse\s*associate|warehouse\s*worker|'
+    r'material\s*handler|machine\s*operator|assembler|floor\s*tech\w*|'
+    r'production\s*(operator|associate|technician|worker|process\s*technician)|'
+    r'maintenance\s*technician|quality\s*inspector|'
     r'truck\s*driver|cdl\s*driver|delivery\s*driver|'
-    # Healthcare / medical
-    r'nurse\b|nursing|rn\b|lpn\b|cna\b|phlebotom|radiolog|'
+    # Healthcare / medical  (prefix stems need \w* — a bare stem followed by
+    # the group's closing \b can never match "radiologist" / "landscaper")
+    r'nurse\b|nursing|rn\b|lpn\b|cna\b|phlebotom\w*|radiolog\w*|'
     r'medical\s*assistant|dental|hygienist|pharmacist|pharmacy\s*tech|'
     r'physician|surgeon|therapist(?!\s*(ui|ux))|paramedic|emt\b|'
     # Legal (non-tech)
@@ -53,6 +59,38 @@ NON_IT_TITLE_PATTERNS = re.compile(
     r'substitute\s*teacher|tutor(?!\s*(ai|software|data))|'
     # Cleaning / maintenance
     r'housekeeper|housekeeping|maid|cleaning|'
+    # Business functions at tech companies — not IT roles. On a 6.7k-job
+    # sample 24% of kept titles were sales / recruiting / finance / HR /
+    # marketing / legal. IT_TITLE_PATTERNS still overrides ("Sales Engineer",
+    # "Marketing Data Analyst", "Finance Systems Analyst" stay).
+    r'account\s*executive|sales\s*development|sdr\b|bdr\b|'
+    r'business\s*development\s*(rep|representative|manager|director|lead|associate)|'
+    r'sales\s*(manager|director|representative|rep|associate|specialist|executive|leader|lead)|'
+    r'(enterprise|strategic|partner|channel|commercial|key|named|mid-market|smb)\s*account\s*(manager|director)|'
+    r'account\s*manager|customer\s*success|renewals?\s*(manager|specialist|lead|associate)|'
+    r'recruit\w*|talent\s*acquisition|sourcer\b|'
+    r'people\s*(ops|operations|partner|business\s*partner|programs?|team|experience)|'
+    r'hr\b|hrbp|human\s*resources|benefits\s*(specialist|analyst|manager|lead)|'
+    r'payroll|workplace\s*(experience|coordinator|manager)|'
+    r'office\s*(manager|coordinator|assistant)|executive\s*assistant|administrative\s*assistant|'
+    r'chief\s*of\s*staff|'
+    r'accountant|accounting|controller\b|bookkeep\w*|treasury|'
+    r'tax\s*(manager|analyst|accountant|lead|director|specialist|associate|senior|staff)|'
+    r'fp&a|financial\s*analyst|strategic\s*finance|corporate\s*development|'
+    r'finance\s*(manager|analyst|director|lead|associate|partner|business\s*partner)|'
+    r'investment\s*(analyst|associate)|'
+    r'(general|corporate|commercial|legal|privacy|regulatory|employment|product)\s*counsel|'
+    r'legal\s*(operations|ops)|contracts?\s*(manager|specialist|administrator|negotiator)|'
+    r'procurement|purchasing|buyer\b|'
+    r'supply\s*chain\s*(analyst|manager|planner|specialist|lead)|real\s*estate|facilities|'
+    r'product\s*marketing|content\s*(marketing|strategist|writer|manager|lead)|copywriter|'
+    r'brand\s*(designer|manager|marketing|strategist|lead|specialist)|'
+    r'communications?\s*(manager|lead|specialist|director|coordinator)|public\s*relations|'
+    r'social\s*media|field\s*market\w*|demand\s*generation|growth\s*marketing|'
+    r'marketing\s*(manager|director|lead|specialist|coordinator|associate)|'
+    r'events?\s*(manager|coordinator|specialist|marketing|lead)|community\s*(manager|lead)|'
+    r'customer\s*(support|service)\s*(specialist|representative|associate|agent)|'
+    r'onboarding\s*specialist|'
     # Other clearly non-IT
     r'idos\b|lame\b'
     r')\b',
@@ -87,9 +125,77 @@ IT_TITLE_PATTERNS = re.compile(
     r'site\s*reliability|reliability\s*engineer|'
     r'infrastructure|firmware|embedded|robotics|'
     r'blockchain|fintech|saas|'
-    r'computer\s*scientist'
+    r'computer\s*scientist|'
+    # Tech roles whose titles collide with the business-function patterns above
+    r'systems?\s*(analyst|engineer|administrator|admin|architect|integrator)|'
+    r'technical\s*account|member\s*of\s*technical\s*staff|mts\b|'
+    r'research\s*(scientist|engineer)|applied\s*scientist|data\s*science|'
+    r'hris\b|workday|servicenow|netsuite|'
+    r'solutions?\s*(engineer|architect|consultant)'
     r')\b',
     re.IGNORECASE
+)
+
+
+# Explicit non-US countries / cities / regions. Substring match on the
+# lower-cased location AFTER the US signals (state codes, state names, US
+# cities) have had their say, so "Milwaukee" (contains "uk") and "Indiana"
+# (contains "india") are already accepted by then.
+NON_US_SIGNALS = [
+    'international', 'united kingdom', 'england', 'scotland', 'wales', 'london', 'manchester',
+    'edinburgh', 'glasgow', 'leeds', 'belfast',
+    'canada', 'canadian', 'toronto', 'vancouver', 'montreal', 'ottawa', 'calgary', 'waterloo', 'ontario', 'quebec',
+    'bangalore', 'bengaluru', 'hyderabad', 'mumbai', 'pune', 'noida', 'gurgaon', 'gurugram', 'chennai', 'delhi',
+    'germany', 'berlin', 'munich', 'hamburg', 'frankfurt', 'cologne', 'stuttgart',
+    'france', 'paris', 'japan', 'tokyo', 'osaka',
+    'singapore', 'taiwan', 'taipei',
+    'australia', 'sydney', 'melbourne', 'brisbane', 'perth',
+    'new zealand', 'auckland', 'wellington',
+    'ireland', 'dublin', 'netherlands', 'amsterdam', 'rotterdam', 'utrecht',
+    'belgium', 'brussels', 'antwerp', 'luxembourg',
+    'spain', 'madrid', 'barcelona',
+    'italy', 'milan', 'brazil', 'sao paulo', 'são paulo',
+    'mexico', 'mexico city', 'guadalajara', 'monterrey',
+    'korea', 'seoul',
+    'china', 'beijing', 'shanghai', 'shenzhen', 'hangzhou',
+    'hong kong', 'israel', 'tel aviv', 'herzliya',
+    'switzerland', 'zurich', 'zürich', 'basel', 'geneva', 'lausanne',
+    'sweden', 'stockholm', 'gothenburg',
+    'norway', 'oslo', 'denmark', 'copenhagen', 'aarhus', 'finland', 'helsinki',
+    'austria', 'vienna', 'greece', 'athens', 'hungary', 'budapest', 'turkey', 'istanbul', 'ankara',
+    'poland', 'warsaw', 'krakow', 'kraków', 'wroclaw', 'wrocław', 'gdansk',
+    'czech', 'prague', 'slovakia', 'bratislava', 'slovenia', 'croatia', 'zagreb', 'serbia', 'belgrade',
+    'bulgaria', 'sofia', 'romania', 'bucharest', 'cluj', 'ukraine', 'kyiv', 'kiev',
+    'lithuania', 'vilnius', 'latvia', 'estonia', 'tallinn',
+    'portugal', 'lisbon', 'philippines', 'manila', 'cebu',
+    'vietnam', 'ho chi minh', 'hanoi',
+    'thailand', 'bangkok',
+    'malaysia', 'kuala lumpur', 'indonesia', 'jakarta',
+    'pakistan', 'karachi', 'lahore', 'bangladesh', 'dhaka', 'sri lanka', 'colombo',
+    'uae', 'dubai', 'abu dhabi', 'emirates',
+    'saudi', 'riyadh', 'qatar', 'doha', 'bahrain', 'kuwait', 'amman', 'lebanon', 'beirut',
+    'egypt', 'cairo', 'morocco', 'casablanca', 'ghana', 'accra',
+    'kenya', 'nairobi',
+    'south africa', 'cape town', 'johannesburg',
+    'nigeria', 'lagos',
+    'argentina', 'buenos aires',
+    'colombia', 'bogota', 'bogotá', 'medellin', 'medellín',
+    'chile', 'santiago', 'uruguay', 'montevideo', 'ecuador', 'costa rica', 'san josé, costa rica',
+    'emea', 'apac', 'latam', 'dach', 'benelux', 'nordics',
+    'djibouti', 'iceland', 'malta', 'cyprus',
+]
+
+# Short names that are substrings of US places ("Milwaukee", "Indian Wells",
+# "Brigantine", "Romania") — matched as whole words only.
+_NON_US_WORDS = re.compile(r'\b(?:uk|u\.k\.|india|oman|peru|jordan|anz|riga|porto|cork|lyon|rome)\b', re.I)
+
+# Upper-case ISO alpha-2/alpha-3 codes that are not US state codes and not
+# compass points / English words seen in street addresses (SE, NO, IT, AT...).
+_NON_US_ISO_CODES = re.compile(
+    r'(?<![A-Za-z])(?:'
+    r'IE|AU|GB|FR|NL|ES|JP|SG|BR|MX|CH|PL|PT|NZ|ZA|AE|KR|CN|HK|TW|BE|DK|FI|CZ|RO|EG|NG|KE|PH|VN|TH|UA|'
+    r'DEU|GBR|FRA|CAN|CAD|AUS|IND|NLD|IRL|ESP|ITA|CHE|SWE|NOR|DNK|FIN|POL|BEL|AUT|PRT|CZE|ROU|HUN|GRC|TUR|ISR|ARE|SGP|JPN|KOR|CHN|TWN|HKG|MEX|BRA|ARG|COL|CHL|PER|NZL|ZAF|EGY|NGA|KEN|PHL|VNM|THA|MYS|IDN|PAK|BGD|LKA|UKR'
+    r')(?![A-Za-z])'
 )
 
 # Max age for jobs — drop anything older than this
@@ -126,6 +232,18 @@ class ValidatePipeline:
                 f"No description for job {item.get('source_job_id', '?')} "
                 f"from {item.get('company_slug', '?')}"
             )
+
+        # 2b. Identity / link columns that cannot be shortened: a truncated
+        # apply_url is a dead link and a truncated source_job_id is another
+        # job (and in strict sql_mode either sinks the whole company batch).
+        for field, limit in MAX_LEN_IDENTITY.items():
+            value = item.get(field)
+            if isinstance(value, str) and len(value) > limit:
+                self.dropped += 1
+                raise DropItem(
+                    f"{field} too long ({len(value)} > {limit}) for job "
+                    f"{item.get('source_job_id', '?')} from {item.get('company_slug', '?')}"
+                )
 
         title = item.get("title", "")
 
@@ -231,67 +349,30 @@ class ValidatePipeline:
         if re.search(r',\s*(ON|QC|BC|AB|MB|SK|NS|NB|NL|PE|YT|NT|NU)\b', location):
             return False
 
+        # ISO country codes ATSs append or prefix ("Dublin, IE", "Sydney, AU",
+        # "DEU - Remote - Munich", "CAD - Toronto"). Upper-case only, and only
+        # codes that are not also a US state code.
+        if _NON_US_ISO_CODES.search(location):
+            return False
+
+        # Explicit non-US countries/cities — definitely not US. Checked BEFORE
+        # the generic "remote" allowance: "Remote - United Kingdom", "Belgium -
+        # Remote", "UAE - Remote" and "Oslo - Remote" were all being kept
+        # because the remote branch returned first.
+        for sig in NON_US_SIGNALS:
+            if sig in loc_lower:
+                return False
+        if _NON_US_WORDS.search(loc_lower):
+            return False
+
         # "Remote" with no country qualifier = allow through (likely US)
         if loc_lower in ('remote', 'remote, us', 'remote - us', 'anywhere'):
             return True
         if re.match(r'^remote\s*[-–/]\s*(us|usa|united states)', loc_lower):
             return True
         # Generic "Remote" without country = allow (most of our sources are US companies)
-        if 'remote' in loc_lower and not any(x in loc_lower for x in [
-            'uk', 'europe', 'emea', 'apac', 'canada', 'india', 'germany',
-            'france', 'singapore', 'japan', 'australia', 'brazil', 'mexico',
-            'ireland', 'london', 'berlin', 'toronto', 'sydney', 'amsterdam',
-            'paris', 'dublin', 'munich', 'stockholm', 'tel aviv', 'bangalore',
-            'hyderabad', 'mumbai', 'pune', 'taiwan', 'korea', 'china',
-            'hong kong', 'manila', 'vietnam', 'thailand', 'poland', 'czech',
-            'romania', 'bucharest', 'spain', 'italy', 'netherlands', 'switzerland',
-            'basel', 'zurich', 'noida', 'gurgaon'
-        ]):
+        if 'remote' in loc_lower:
             return True
-
-        # Explicit non-US countries/cities — definitely not US
-        non_us_signals = [
-            'international', 'united kingdom', 'uk', 'england', 'london', 'manchester',
-            'canada', 'toronto', 'vancouver', 'montreal', 'ottawa',
-            'india', 'bangalore', 'hyderabad', 'mumbai', 'pune', 'noida', 'gurgaon', 'chennai',
-            'germany', 'berlin', 'munich', 'hamburg', 'frankfurt',
-            'france', 'paris', 'lyon',
-            'japan', 'tokyo', 'osaka',
-            'singapore', 'taiwan', 'taipei',
-            'australia', 'sydney', 'melbourne', 'brisbane',
-            'ireland', 'dublin', 'cork',
-            'netherlands', 'amsterdam', 'rotterdam',
-            'spain', 'madrid', 'barcelona',
-            'italy', 'milan', 'rome',
-            'brazil', 'sao paulo',
-            'mexico', 'mexico city', 'guadalajara',
-            'korea', 'seoul',
-            'china', 'beijing', 'shanghai', 'shenzhen',
-            'hong kong', 'israel', 'tel aviv',
-            'switzerland', 'zurich', 'basel', 'geneva',
-            'sweden', 'stockholm',
-            'poland', 'warsaw', 'krakow', 'wroclaw',
-            'czech', 'prague',
-            'romania', 'bucharest',
-            'portugal', 'lisbon',
-            'philippines', 'manila',
-            'vietnam', 'ho chi minh',
-            'thailand', 'bangkok',
-            'malaysia', 'kuala lumpur',
-            'uae', 'dubai', 'abu dhabi',
-            'saudi', 'riyadh',
-            'kenya', 'nairobi',
-            'south africa', 'cape town', 'johannesburg',
-            'nigeria', 'lagos',
-            'argentina', 'buenos aires',
-            'colombia', 'bogota', 'medellin',
-            'chile', 'santiago',
-            'emea', 'apac', 'latam',
-            'djibouti', 'kuwait',
-        ]
-        for sig in non_us_signals:
-            if sig in loc_lower:
-                return False
 
         # If we can't determine, allow through (enrichment will handle)
         return True

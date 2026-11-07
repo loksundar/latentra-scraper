@@ -4,13 +4,21 @@ Handles source loading, error handling, and common utilities.
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import scrapy
 
 from latentra_scraper.sources.loader import get_active_sources
 
 _US_COUNTRY_CODES = {"US", "USA", "U.S", "U.S.A", "UNITED STATES", "UNITED STATES OF AMERICA"}
+
+# The clock jobs-ingest.php / jobs-db.php run on (date_default_timezone_set
+# and SET time_zone). Falls back to fixed CST on hosts without tzdata.
+try:
+    from zoneinfo import ZoneInfo
+    _SERVER_TZ = ZoneInfo("America/Chicago")
+except Exception:  # pragma: no cover - no tzdata on the host
+    _SERVER_TZ = timezone(timedelta(hours=-6))
 
 
 class BaseJobSpider(scrapy.Spider):
@@ -184,25 +192,38 @@ class BaseJobSpider(scrapy.Spider):
         return str(value).strip()
 
     @staticmethod
+    def _to_server_clock(dt: datetime) -> str:
+        """
+        Format for the DATETIME column. jobs-ingest.php stamps first_seen_at /
+        last_seen_at in America/Chicago, so a timezone-aware posting date is
+        converted to that clock before the offset is dropped; otherwise a job
+        published 03:00 UTC lands as "posted 03:00" next to a first_seen_at of
+        22:30 the previous day. Naive values are passed through unchanged.
+        """
+        if dt.tzinfo is not None:
+            dt = dt.astimezone(_SERVER_TZ)
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+    @staticmethod
     def safe_datetime_iso(value) -> str | None:
-        """Parse an ISO datetime string into 'YYYY-MM-DD HH:MM:SS' or None."""
+        """Parse an ISO datetime string into 'YYYY-MM-DD HH:MM:SS' (server clock) or None."""
         if not value:
             return None
         try:
-            dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-            return dt.strftime("%Y-%m-%d %H:%M:%S")
+            dt = datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+            return BaseJobSpider._to_server_clock(dt)
         except (ValueError, AttributeError):
             return None
 
     @staticmethod
     def safe_datetime_epoch_ms(value) -> str | None:
-        """Parse epoch milliseconds into 'YYYY-MM-DD HH:MM:SS' or None."""
+        """Parse epoch milliseconds into 'YYYY-MM-DD HH:MM:SS' (server clock) or None."""
         if not value:
             return None
         try:
             dt = datetime.fromtimestamp(int(value) / 1000, tz=timezone.utc)
-            return dt.strftime("%Y-%m-%d %H:%M:%S")
-        except (ValueError, OSError, TypeError):
+            return BaseJobSpider._to_server_clock(dt)
+        except (ValueError, OSError, TypeError, OverflowError):
             return None
 
     @staticmethod

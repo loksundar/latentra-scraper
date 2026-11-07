@@ -1,0 +1,47 @@
+{
+  "apiVersion": "1",
+  "jobs": [
+    {
+      "id": "hyb-1",
+      "title": "Software Engineer, Product Infrastructure",
+      "isListed": true,
+      "isRemote": true,
+      "workplaceType": "Hybrid",
+      "employmentType": "FullTime",
+      "location": "San Francisco, California",
+      "department": "Engineering",
+      "publishedAt": "2026-11-01T18:30:00.000Z",
+      "descriptionHtml": "<p>We build distributed systems for remote teams. Hybrid: 3 days in our SF office.</p>",
+      "applyUrl": "https://jobs.ashbyhq.com/acme/hyb-1/application",
+      "address": {"postalAddress": {"addressCountry": "United States", "addressLocality": "San Francisco", "addressRegion": "California"}}
+    },
+    {
+      "id": "ons-1",
+      "title": "Hardware Engineer",
+      "isListed": true,
+      "isRemote": true,
+      "workplaceType": "OnSite",
+      "employmentType": "FullTime",
+      "location": "New York, NY (HQ)",
+      "department": "Engineering",
+      "publishedAt": "2026-11-01T18:30:00.000Z",
+      "descriptionHtml": "<p>Lab work on site.</p>",
+      "applyUrl": "https://jobs.ashbyhq.com/acme/ons-1/application",
+      "address": {"postalAddress": {"addressCountry": "United States"}}
+    },
+    {
+      "id": "rem-1",
+      "title": "Developer Advocate",
+      "isListed": true,
+      "isRemote": true,
+      "workplaceType": null,
+      "employmentType": "FullTime",
+      "location": "Remote (US)",
+      "department": "DevRel",
+      "publishedAt": "2026-11-01T18:30:00.000Z",
+      "descriptionHtml": "<p>Talk to developers.</p>",
+      "applyUrl": "https://jobs.ashbyhq.com/acme/rem-1/application",
+      "address": {"postalAddress": {"addressCountry": "United States"}}
+    }
+  ]
+}

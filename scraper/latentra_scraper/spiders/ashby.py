@@ -75,15 +75,20 @@ class AshbySpider(BaseJobSpider):
                 self.count_prefiltered()
                 continue
 
-            # Remote type
+            # Remote type. workplaceType is the posting's actual arrangement;
+            # isRemote is a board-level "remote candidates considered" flag
+            # that Notion/Ramp set on every Hybrid office role (178 of 325 live
+            # postings were Hybrid + isRemote=true). Let workplaceType win.
             is_remote = job.get("isRemote")
             workplace = self.safe_text(job.get("workplaceType")).lower()
-            if is_remote is True or workplace == "remote":
+            if workplace == "remote":
                 remote_type = "remote"
             elif workplace == "hybrid":
                 remote_type = "hybrid"
             elif workplace in ("onsite", "on-site"):
                 remote_type = "onsite"
+            elif is_remote is True:
+                remote_type = "remote"
             else:
                 remote_type = "unknown"
 

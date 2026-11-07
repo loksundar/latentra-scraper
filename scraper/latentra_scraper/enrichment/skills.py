@@ -19,7 +19,12 @@ SKILLS = {
     "C#": [r"\bc#\b", r"\bcsharp\b", r"\bc\s*sharp\b"],
     "Ruby": [r"\bruby\b"],
     "PHP": [r"\bphp\b"],
-    "Swift": [r"\bswift\b"],
+    # "swift resolution", "SWIFT and other fiat rails" are not the language:
+    # need the iOS toolchain nearby or SwiftUI.
+    "Swift": [r"\bswiftui\b",
+              r"\b(?:ios|objective[\s-]?c|xcode|uikit|cocoa|kotlin)\b[^.\n]{0,80}\bswift\b",
+              r"\bswift\b[^.\n]{0,80}\b(?:ios|objective[\s-]?c|xcode|uikit|cocoa|swiftui)\b",
+              r"\b(?:written|proficien\w+|fluen\w+|experience|expertise)\s+(?:in|with)\s+swift\b"],
     "Kotlin": [r"\bkotlin\b"],
     "Scala": [r"\bscala\b"],
     "R": [r"\br\b(?:\s+(?:programming|language|studio))"],
@@ -34,13 +39,16 @@ SKILLS = {
     "Angular": [r"\bangular\b"],
     "Vue": [r"\bvue(?:\.?js)?\b"],
     "Next.js": [r"\bnext\.?js\b"],
-    "Node.js": [r"\bnode\.?js\b", r"\bnode\b"],
-    "Express": [r"\bexpress(?:\.?js)?\b"],
+    "Node.js": [r"\bnode\.?js\b", r"\bnodejs\b"],   # bare "node" is "multi-node GPU training"
+    "Express": [r"\bexpress\.?js\b", r"\bnode(?:\.js)?\s*(?:/|and|,)\s*express\b"],   # not "Adobe Express"
     "Django": [r"\bdjango\b"],
     "Flask": [r"\bflask\b"],
     "FastAPI": [r"\bfastapi\b"],
-    "Spring": [r"\bspring\s*boot\b", r"\bspring\b(?:\s+framework)?"],
-    "Rails": [r"\brails\b", r"\bruby on rails\b"],
+    # "graduating in spring 2027" is a season; "crypto rails" / "payment rails"
+    # are not Ruby on Rails.
+    "Spring": [r"\bspring\s*(?:boot|framework|mvc|batch|cloud|data|security)\b", r"\bjava\s*/?\s*spring\b"],
+    "Rails": [r"\bruby\s*(?:on|/)\s*rails\b", r"\brails\s+(?:app|application|api|backend|monolith|developer|engineer)\b",
+              r"\b(?:ruby|activerecord|rspec)\b[^.\n]{0,40}\brails\b", r"\brails\b[^.\n]{0,40}\b(?:ruby|activerecord|rspec)\b"],
     "Laravel": [r"\blaravel\b"],
     ".NET": [r"\b\.net\b", r"\bdotnet\b", r"\basp\.net\b"],
     "GraphQL": [r"\bgraphql\b"],
@@ -53,7 +61,10 @@ SKILLS = {
     "Snowflake": [r"\bsnowflake\b"],
     "BigQuery": [r"\bbigquery\b", r"\bbig query\b"],
     "Redshift": [r"\bredshift\b"],
-    "Spark": [r"\bspark\b", r"\bpyspark\b", r"\bapache spark\b"],
+    # "spark innovation" is the verb (128 of 340 matches on a Greenhouse sample).
+    "Spark": [r"\bpyspark\b", r"\bapache\s+spark\b", r"\bspark\s*(?:sql|streaming|mllib|structured)\b",
+              r"\b(?:hadoop|hive|flink|kafka|databricks|scala|airflow|emr|presto|trino|delta\s+lake)\b[^.\n]{0,60}\bspark\b",
+              r"\bspark\b[^.\n]{0,60}\b(?:hadoop|hive|flink|kafka|databricks|scala|airflow|emr|presto|trino|delta\s+lake)\b"],
     "Airflow": [r"\bairflow\b"],
     "dbt": [r"\bdbt\b"],
     "Kafka": [r"\bkafka\b"],

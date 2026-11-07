@@ -49,6 +49,32 @@ def _apply_shard(sources: list[dict]) -> list[dict]:
     return kept
 
 
+def _dedupe_tenants(sources: list[dict]) -> list[dict]:
+    """
+    Drop sources that point at the SAME ATS tenant under two slugs (the live
+    table has bah + booz-allen → bah/bah_jobs and motorola + motorolasolutions
+    → motorolasolutions/Careers). Both slugs yield identical source_job_ids,
+    and jobs.uq_source_job is (source, source_job_id) without company_slug, so
+    the two batches fight over one row every run and the tenant is crawled
+    twice. The first slug wins; the duplicate is logged so it can be
+    deactivated server-side.
+    """
+    seen: dict[str, str] = {}
+    kept = []
+    for s in sources:
+        base = str(s.get("base_url") or "").strip().rstrip("/").lower()
+        if base:
+            if base in seen:
+                logger.warning(
+                    f"Duplicate source: {s.get('company_slug')} has the same base_url as "
+                    f"{seen[base]} ({base}) — skipping it (same tenant, same source_job_ids)"
+                )
+                continue
+            seen[base] = str(s.get("company_slug"))
+        kept.append(s)
+    return kept
+
+
 def get_active_sources(source_type: str) -> list[dict]:
     """
     Return active sources for a source_type (greenhouse, lever, workday, ...)
@@ -67,7 +93,7 @@ def get_active_sources(source_type: str) -> list[dict]:
     if sources_file:
         with open(sources_file, encoding="utf-8") as f:
             data = json.load(f)
-        sources = _apply_shard(data.get(source_type, []))
+        sources = _apply_shard(_dedupe_tenants(data.get(source_type, [])))
         logger.info(f"Loaded {len(sources)} active {source_type} sources from {sources_file}")
         return sources
 
@@ -89,7 +115,7 @@ def get_active_sources(source_type: str) -> list[dict]:
             )
             resp.raise_for_status()
             data = resp.json()
-            sources = _apply_shard(data.get("sources", []))
+            sources = _apply_shard(_dedupe_tenants(data.get("sources", [])))
             logger.info(f"Loaded {len(sources)} active {source_type} sources from API")
             return sources
         except Exception as e:

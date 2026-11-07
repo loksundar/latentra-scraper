@@ -47,7 +47,7 @@ class TestGreenhouse:
         assert job["department"] == "Engineering"  # first department wins
         assert job["location"] == "New York, NY"
         assert job["apply_url"] == "https://boards.greenhouse.io/acme/jobs/4011001"
-        assert job["posted_at"] == "2026-06-20 12:34:56"
+        assert job["posted_at"] == "2026-06-20 11:34:56"   # -04:00 → America/Chicago (CDT)
 
     def test_location_as_plain_string(self, source):
         job = self._items(source)[1]
@@ -84,7 +84,7 @@ class TestLever:
         assert job["employment_type"] == "full_time"
         assert job["department"] == "Web Platform"
         assert job["apply_url"] == "https://jobs.lever.co/acme/abc-123"
-        assert job["posted_at"] == "2025-06-15 15:06:40"  # epoch ms 1750000000000 (UTC)
+        assert job["posted_at"] == "2025-06-15 10:06:40"   # epoch ms (UTC) → America/Chicago (CDT)  # epoch ms 1750000000000 (UTC)
 
     def test_description_combines_lists_and_additional(self, source):
         desc = self._items(source)[0]["description_html"]
@@ -127,7 +127,7 @@ class TestAshby:
         assert job["employment_type"] == "full_time"
         assert job["department"] == "Infrastructure"
         assert job["apply_url"] == "https://jobs.ashbyhq.com/acme/a1b2c3/application"
-        assert job["posted_at"] == "2026-06-01 00:00:00"
+        assert job["posted_at"] == "2026-05-31 19:00:00"   # 00:00Z → America/Chicago (CDT)
 
 
 # ── Workday ─────────────────────────────────────────
@@ -229,7 +229,7 @@ class TestSmartRecruiters:
         assert job["department"] == "Security"
         # ref link preferred over constructed URL
         assert job["apply_url"] == "https://jobs.smartrecruiters.com/Acme/744000012-security-analyst"
-        assert job["posted_at"] == "2099-06-10 08:00:00"   # fixture date kept in the future so the age prefilter never trips
+        assert job["posted_at"] == "2099-06-10 03:00:00"   # fixture date kept in the future so the age prefilter never trips
 
     def test_description_combines_sections_with_titles(self, source):
         desc = self._items(source)[0]["description_html"]

@@ -72,7 +72,7 @@ class TestRippling:
         assert job["employment_type"] == "full_time"
         assert (job["salary_min"], job["salary_max"], job["salary_currency"]) == (95500, 113500, "USD")
         assert job["description_html"] == "<p>Role</p><p>Co</p>"
-        assert job["posted_at"] == "2026-01-19 07:59:15"
+        assert job["posted_at"] == "2026-01-19 09:59:15"   # 07:59 PST → America/Chicago
         assert job["apply_url"].startswith("https://ats.rippling.com/")
 
 
@@ -89,7 +89,7 @@ class TestGem:
         assert a["location"] == "San Francisco, CA"
         assert a["department"] == "Engineering"
         assert a["employment_type"] == "full_time"
-        assert a["posted_at"] == "2026-10-30 12:00:00"
+        assert a["posted_at"] == "2026-10-30 07:00:00"   # 12:00Z → America/Chicago (CDT)
         assert b["location"] == "Remote (US)" and b["remote_type"] == "remote"
         assert b["description_html"] == "x"
 
@@ -124,7 +124,7 @@ class TestOracle:
         assert job["remote_type"] == "hybrid"
         assert job["employment_type"] == "full_time"
         assert job["description_html"] == "<p>Desc</p><p>Quals</p>"
-        assert job["posted_at"] == "2026-11-02 08:00:00"
+        assert job["posted_at"] == "2026-11-02 02:00:00"   # 08:00Z → America/Chicago (CST)
         assert job["apply_url"] == self.BASE + "/job/1001"
 
 
@@ -197,7 +197,7 @@ def test_apple_search_builds_items_and_skips_retail():
     assert job["source"] == "apple" and job["company"] == "Apple"
     assert job["title"] == "Mechatronics Controls Engineer"
     assert job["location"] == "Sunnyvale, United States"
-    assert job["posted_at"] == "2026-11-06 04:04:34"
+    assert job["posted_at"] == "2026-11-05 22:04:34"   # 04:04Z → America/Chicago (CST)
     assert job["description_html"].startswith("<p>")
     assert job["apply_url"].startswith("https://jobs.apple.com/en-us/details/")
     # all results fit on one page -> no further search request
