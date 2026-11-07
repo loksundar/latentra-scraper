@@ -10,17 +10,23 @@ Any failure for a company in the same run (exception in a callback, request
 errback, non-2xx, non-JSON body such as a WAF page, or a callback that called
 spider.mark_source_failed()) disqualifies it.
 
-Two failure sets are kept on the spider:
+Two sets are kept on the spider:
     companies_failed          — any failed request for the company. Blocks the
-                                heartbeat.
-    companies_listing_failed  — a failed LISTING-level request (anything that
-                                is not a per-job detail fetch, i.e. whose
-                                cb_kwargs carry no "listing"). The company's
-                                job batch is then sent with partial=1 so the
-                                server does not sweep the postings the crawl
-                                never saw (page 2 timed out, page 3 was a WAF
-                                page, ...). A single failed detail only loses
-                                that one job for this run.
+                                heartbeat (the ATS was not checked cleanly).
+    companies_listing_failed  — the company's crawl is INCOMPLETE: a listing
+                                page failed (page 2 timed out, page 3 was a WAF
+                                page, error JSON), a per-job detail fetch
+                                failed, or the spider hit its own paging cap
+                                with rows left. The company's job batch is then
+                                sent with partial=1 so the server does not
+                                sweep the postings the crawl never saw.
+
+Detail failures count as incomplete on purpose: the server's stale sweep
+deletes every job of the company that is missing from the batch, so a single
+timed-out detail would delete a live posting (and re-insert it next run with a
+fresh first_seen). Postponing the sweep until a clean run is the cheaper error
+— jobs whose apply page is really gone are still removed through the ingest
+pipeline's apply_url validation (dead_source_job_ids).
 
 Requests whose body is legitimately not JSON (Apple's CSRF token endpoint)
 opt out of the JSON sniff with cb_kwargs={"expect_json": False, ...}.
@@ -36,16 +42,18 @@ def _key(spider, request):
     return (src.get("source_type") or spider.source_type, src["company_slug"])
 
 
-def _is_detail(request) -> bool:
-    return "listing" in (getattr(request, "cb_kwargs", None) or {})
+def mark_incomplete(spider, request):
+    """The crawl saw only part of this company's postings — batch goes partial=1."""
+    key = _key(spider, request)
+    if key:
+        spider.__dict__.setdefault("companies_listing_failed", set()).add(key)
+    return key
 
 
 def mark_failed(spider, request):
-    key = _key(spider, request)
+    key = mark_incomplete(spider, request)
     if key:
         spider.__dict__.setdefault("companies_failed", set()).add(key)
-        if not _is_detail(request):
-            spider.__dict__.setdefault("companies_listing_failed", set()).add(key)
 
 
 def _looks_like_json(response) -> bool:

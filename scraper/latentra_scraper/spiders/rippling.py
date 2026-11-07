@@ -94,8 +94,11 @@ class RipplingSpider(BaseJobSpider):
     def parse_detail(self, response, source, listing):
         d = self.safe_json_parse(response.text)
         listing = _dict(listing)
-        if not isinstance(d, dict):
-            self.logger.warning(f"[{source['company_slug']}] No detail for {listing.get('name', '?')}")
+        if not isinstance(d, dict) or not (d.get("uuid") or d.get("name")):
+            # {"error_code": ...} is a dict too; without uuid/name there is no
+            # posting here. The listed job would be missing from the batch and
+            # swept as stale — flag the company's run incomplete instead.
+            self.mark_source_failed(response, f"No detail for {listing.get('name', '?')} ({listing.get('uuid', '?')})")
             return
 
         desc = d.get("description")

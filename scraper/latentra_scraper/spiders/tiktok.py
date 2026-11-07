@@ -90,7 +90,10 @@ class TikTokSpider(BaseJobSpider):
             self.logger.info(f"[tiktok] Total jobs (all countries): {total}")
         yield from self.parse_posts(posts, source)
         nxt = offset + self.PAGE_SIZE
-        if posts and nxt < total and nxt < self.MAX_OFFSET:
+        if posts and nxt < total:
+            if nxt >= self.MAX_OFFSET:
+                self.mark_source_incomplete(response, f"paging cap at offset {nxt} of {total} postings")
+                return
             yield self._req(source, nxt)
 
     @staticmethod

@@ -1,0 +1,67 @@
+{
+ "apiVersion": "1",
+ "jobs": [
+  {
+   "id": "aaaa1111-0000-4000-8000-000000000001",
+   "title": "Senior Software Engineer, Payments",
+   "department": "Engineering",
+   "team": "Payments",
+   "employmentType": "FullTime",
+   "location": "Toronto, ON",
+   "secondaryLocations": [
+    {"location": "Remote (Canada)", "address": {"postalAddress": {"addressCountry": "Canada"}}},
+    {"location": "Remote (US)", "address": {"postalAddress": {"addressCountry": "United States"}}},
+    {"location": "Miami, FL", "address": {"postalAddress": {"addressRegion": "Florida", "addressCountry": "USA", "addressLocality": "Miami"}}}
+   ],
+   "publishedAt": "2026-11-05T15:00:00.000+00:00",
+   "isListed": true,
+   "isRemote": true,
+   "workplaceType": "Hybrid",
+   "address": {"postalAddress": {"addressRegion": "Ontario", "addressCountry": "Canada", "addressLocality": "Toronto"}},
+   "jobUrl": "https://jobs.ashbyhq.com/acme/aaaa1111-0000-4000-8000-000000000001",
+   "applyUrl": "https://jobs.ashbyhq.com/acme/aaaa1111-0000-4000-8000-000000000001/application",
+   "descriptionHtml": "<p>Build the payments platform.</p>",
+   "descriptionPlain": "Build the payments platform."
+  },
+  {
+   "id": "aaaa1111-0000-4000-8000-000000000002",
+   "title": "Software Engineer, Infrastructure",
+   "department": "Engineering",
+   "team": "Infra",
+   "employmentType": "FullTime",
+   "location": "London, UK",
+   "secondaryLocations": [
+    {"location": "Dublin, Ireland", "address": {"postalAddress": {"addressRegion": "Ireland", "addressCountry": "Ireland", "addressLocality": "Dublin"}}}
+   ],
+   "publishedAt": "2026-11-05T15:00:00.000+00:00",
+   "isListed": true,
+   "isRemote": false,
+   "workplaceType": "OnSite",
+   "address": {"postalAddress": {"addressRegion": "Greater London", "addressCountry": "United Kingdom", "addressLocality": "London"}},
+   "jobUrl": "https://jobs.ashbyhq.com/acme/aaaa1111-0000-4000-8000-000000000002",
+   "applyUrl": "https://jobs.ashbyhq.com/acme/aaaa1111-0000-4000-8000-000000000002/application",
+   "descriptionHtml": "<p>Run the clusters.</p>",
+   "descriptionPlain": "Run the clusters."
+  },
+  {
+   "id": "aaaa1111-0000-4000-8000-000000000003",
+   "title": "Staff Engineer",
+   "department": "Engineering",
+   "team": "Core",
+   "employmentType": "FullTime",
+   "location": "New York, NY (HQ)",
+   "secondaryLocations": [
+    {"location": "Remote (Canada)", "address": {"postalAddress": {"addressCountry": "Canada"}}}
+   ],
+   "publishedAt": "2026-11-05T15:00:00.000+00:00",
+   "isListed": true,
+   "isRemote": true,
+   "workplaceType": "Hybrid",
+   "address": {"postalAddress": {"addressRegion": "New York", "addressCountry": "USA", "addressLocality": "New York"}},
+   "jobUrl": "https://jobs.ashbyhq.com/acme/aaaa1111-0000-4000-8000-000000000003",
+   "applyUrl": "https://jobs.ashbyhq.com/acme/aaaa1111-0000-4000-8000-000000000003/application",
+   "descriptionHtml": "<p>Own the core.</p>",
+   "descriptionPlain": "Own the core."
+  }
+ ]
+}

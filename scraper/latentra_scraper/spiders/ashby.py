@@ -29,11 +29,29 @@ class AshbySpider(BaseJobSpider):
 
     @staticmethod
     def _country(job) -> str:
-        addr = job.get("address")
+        addr = job.get("address") if isinstance(job, dict) else None
         postal = addr.get("postalAddress") if isinstance(addr, dict) else None
         if isinstance(postal, dict) and isinstance(postal.get("addressCountry"), str):
             return postal["addressCountry"]
         return ""
+
+    def _us_location(self, job):
+        """
+        The location text to publish, or None when the posting is clearly not
+        US. Ashby postings carry a primary address plus `secondaryLocations`
+        (each with its own address); live boards list e.g. primary
+        "Toronto, ON" with secondaries "Remote (US)" / "Miami, FL". Such a
+        posting IS a US job — skip it only when every address names another
+        country, and when the primary is foreign show the first US secondary.
+        """
+        primary = self._country(job)
+        if not self.is_non_us_country(primary):
+            return self.safe_text(job.get("location"))
+        secondaries = job.get("secondaryLocations")
+        for sec in secondaries if isinstance(secondaries, list) else []:
+            if isinstance(sec, dict) and sec.get("address") and not self.is_non_us_country(self._country(sec)):
+                return self.safe_text(sec.get("location")) or self.safe_text(job.get("location"))
+        return None
 
     def parse_jobs(self, response, source):
         data = self.safe_json_parse(response.text)
@@ -52,7 +70,8 @@ class AshbySpider(BaseJobSpider):
                 continue
             if not job.get("isListed", True):
                 continue
-            if self.is_non_us_country(self._country(job)):
+            location = self._us_location(job)
+            if location is None:
                 self.count_prefiltered()
                 continue
 
@@ -92,7 +111,7 @@ class AshbySpider(BaseJobSpider):
                 company_slug=company_slug,
                 department=self.safe_text(department) or None,
                 seniority="unknown",
-                location=self.safe_text(job.get("location")),
+                location=location,
                 remote_type=remote_type,
                 employment_type=employment_type,
                 salary_min=None,

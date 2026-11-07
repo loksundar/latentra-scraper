@@ -79,7 +79,12 @@ class SmartRecruitersSpider(BaseJobSpider):
         yield from self._handle_postings(content, source)
 
         next_offset = offset + self.PAGE_SIZE
-        if len(content) >= self.PAGE_SIZE and next_offset < self.PAGE_SIZE * self.MAX_PAGES:
+        if len(content) >= self.PAGE_SIZE:
+            if next_offset >= self.PAGE_SIZE * self.MAX_PAGES:
+                # Rows remain beyond our cap: the batch is not the whole board.
+                self.mark_source_incomplete(
+                    response, f"paging cap reached at offset {next_offset} (totalFound={data.get('totalFound')})")
+                return
             yield scrapy.Request(
                 self._list_url(slug, next_offset),
                 callback=self.parse,
@@ -126,8 +131,13 @@ class SmartRecruitersSpider(BaseJobSpider):
     def parse_detail(self, response, source, listing=None):
         detail = self.safe_json_parse(response.text)
         posting = dict(listing or {})
-        if isinstance(detail, dict):
+        if isinstance(detail, dict) and detail.get("id"):
             posting.update({k: v for k, v in detail.items() if v not in (None, "", {}, [])})
+        else:
+            # No usable detail → no description → the validator drops the item
+            # → the job is missing from the batch. That must not sweep it.
+            self.mark_source_failed(response, f"No detail for posting {posting.get('id', '?')}")
+            return
         item = self._safe_build(posting, source)
         if item:
             yield item

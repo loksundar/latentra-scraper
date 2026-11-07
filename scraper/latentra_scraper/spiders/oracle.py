@@ -79,12 +79,15 @@ class OracleSpider(BaseJobSpider):
             self.logger.info(f"[{slug}] Total jobs: {total}")
 
         all_old = bool(reqs)   # listing is newest-first: a page of only-old rows ends paging
+        dates = []
         for req in reqs:
             if not isinstance(req, dict):
                 continue
             req_id = req.get("Id")
             if not req_id:
                 continue
+            if isinstance(req.get("PostedDate"), str):
+                dates.append(req["PostedDate"])
             if self.skip_old_from_listing(req.get("PostedDate")):
                 self.count_prefiltered()
                 continue
@@ -102,8 +105,16 @@ class OracleSpider(BaseJobSpider):
                 errback=self.handle_error,
             )
 
+        # The all-old early stop is only safe if the tenant honoured
+        # sortBy=POSTING_DATES_DESC; an unsorted page that happens to be all old
+        # says nothing about the pages after it, so keep paging in that case.
+        if all_old and dates != sorted(dates, reverse=True):
+            all_old = False
         next_offset = offset + self.PAGE_SIZE
-        if reqs and not all_old and next_offset < total and next_offset < self.PAGE_SIZE * self.MAX_PAGES:
+        if reqs and not all_old and next_offset < total:
+            if next_offset >= self.PAGE_SIZE * self.MAX_PAGES:
+                self.mark_source_incomplete(response, f"paging cap reached at offset {next_offset} (total={total})")
+                return
             yield scrapy.Request(
                 self._list_url(host, site, next_offset),
                 headers={"Accept": "application/json"},
@@ -117,7 +128,9 @@ class OracleSpider(BaseJobSpider):
         listing = listing if isinstance(listing, dict) else {}
         items = data.get("items") if isinstance(data, dict) else None
         if not isinstance(items, list) or not items or not isinstance(items[0], dict):
-            self.logger.warning(f"[{source['company_slug']}] No detail for {listing.get('Title', '?')}")
+            # The job is listed but we could not build it → it would be missing
+            # from the batch → the server would sweep it. Flag the run instead.
+            self.mark_source_failed(response, f"No detail for {listing.get('Title', '?')} ({listing.get('Id', '?')})")
             return
         d = items[0]
 

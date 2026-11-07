@@ -89,9 +89,26 @@ class BaseJobSpider(scrapy.Spider):
         request = getattr(response, "request", None) or response
         mark_failed(self, request)
         if why:
-            src = (getattr(request, "cb_kwargs", None) or {}).get("source") or {}
-            slug = src.get("company_slug") if isinstance(src, dict) else None
-            self.logger.error(f"[{slug or self.name}] {why}")
+            self.logger.error(f"[{self._slug_of(request)}] {why}")
+
+    def mark_source_incomplete(self, response, why: str = ""):
+        """
+        Record that this run saw only PART of the company's postings, without
+        calling the ATS broken: the spider stopped paging at its own cap
+        (MAX_PAGES / MAX_OFFSET) while the API still had rows. The ingest
+        pipeline then sends the batch with partial=1 so the server does not
+        sweep the postings beyond the cap as stale.
+        """
+        from latentra_scraper.middlewares import mark_incomplete
+        request = getattr(response, "request", None) or response
+        mark_incomplete(self, request)
+        if why:
+            self.logger.warning(f"[{self._slug_of(request)}] {why} — batch will be ingested as partial")
+
+    def _slug_of(self, request) -> str:
+        src = (getattr(request, "cb_kwargs", None) or {}).get("source") or {}
+        slug = src.get("company_slug") if isinstance(src, dict) else None
+        return slug or self.name
 
     @staticmethod
     def is_non_us_country(value) -> bool:

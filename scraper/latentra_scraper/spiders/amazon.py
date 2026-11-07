@@ -75,7 +75,10 @@ class AmazonSpider(BaseJobSpider):
         yield from self.parse_jobs_list(jobs, source)
 
         nxt = offset + self.PAGE_SIZE
-        if jobs and nxt < hits and nxt < self.MAX_OFFSET:
+        if jobs and nxt < hits:
+            if nxt >= self.MAX_OFFSET:
+                self.mark_source_incomplete(response, f"[amazon/{category}] paging cap at offset {nxt} of {hits} hits")
+                return
             yield scrapy.Request(
                 self._url(category, nxt),
                 headers={"Accept": "application/json"},

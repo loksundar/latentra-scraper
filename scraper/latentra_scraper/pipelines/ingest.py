@@ -98,6 +98,25 @@ class IngestPipeline:
         self.batches = {}  # (source, company_slug) -> list of job dicts
         self.gzip_enabled = True  # flips off for the run if server can't decode
         self.consecutive_403_losses = 0  # WAF circuit breaker state
+        # Set by the spider_idle signal, which Scrapy fires only when the
+        # scheduler is empty and nothing is in flight — i.e. right before a
+        # natural "finished" close. Any other close (CLOSESPIDER_TIMEOUT,
+        # SIGTERM from `timeout`, Ctrl-C, a cancelled CI job) drops every
+        # request still queued, so the batches only hold what was crawled so
+        # far and must never drive a stale sweep. None = not wired to a crawler
+        # (unit tests), so the runtime watchdog check is the only signal.
+        self.saw_idle = None
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        from scrapy import signals
+        pipeline = cls()
+        pipeline.saw_idle = False
+        crawler.signals.connect(pipeline._on_spider_idle, signal=signals.spider_idle)
+        return pipeline
+
+    def _on_spider_idle(self, spider):
+        self.saw_idle = True
 
     def open_spider(self, spider):
         load_dotenv()
@@ -185,11 +204,22 @@ class IngestPipeline:
                 f"Crawl hit the {runtime:.0f}s watchdog — ingesting as partial "
                 f"(stale-job sweep skipped this run)"
             )
+        elif self.saw_idle is False:
+            # Closed without ever going idle: SIGTERM/SIGINT (the workflow's
+            # `timeout`, a cancelled job, Ctrl-C) or a CloseSpider before the
+            # watchdog. Scrapy's graceful close drops every queued request, so
+            # pages/details never fetched are missing from every batch.
+            timed_out = True
+            spider.logger.warning(
+                f"Spider closed after {runtime:.0f}s before the crawl finished "
+                f"(shutdown/cancel) — ingesting as partial (stale-job sweep skipped this run)"
+            )
 
-        # Same rule per company: if any LISTING request for it failed this run
-        # (page 2 errback, callback exception, WAF page, error JSON), the batch
-        # only holds the pages we did see. Upsert them, but never let the server
-        # sweep the rest as stale on the strength of an incomplete crawl.
+        # Same rule per company: if any request for it failed this run (page 2
+        # errback, callback exception, WAF page, error JSON, a detail fetch) or
+        # the spider stopped at its paging cap, the batch only holds the rows
+        # we did see. Upsert them, but never let the server sweep the rest as
+        # stale on the strength of an incomplete crawl.
         listing_failed = set(getattr(spider, "companies_listing_failed", set()) or set())
 
         deferred = []  # (company_slug, payload) — batches to re-send after cooldown
@@ -210,7 +240,7 @@ class IngestPipeline:
             elif (source, company_slug) in listing_failed:
                 payload["partial"] = 1
                 spider.logger.warning(
-                    f"[{company_slug}] a listing request failed this run — "
+                    f"[{company_slug}] crawl incomplete this run (failed request or paging cap) — "
                     f"ingesting {len(alive_jobs)} jobs as partial (no stale sweep)"
                 )
 

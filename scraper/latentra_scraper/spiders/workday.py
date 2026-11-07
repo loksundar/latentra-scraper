@@ -131,7 +131,9 @@ class WorkdaySpider(BaseJobSpider):
         raw = self.safe_json_parse(response.text)
         listing = listing if isinstance(listing, dict) else {}
         if not isinstance(raw, dict) or not raw:
-            self.logger.warning(f"[{source['company_slug']}] No detail for {listing.get('title', '?')}")
+            # Listed job without a usable detail: it would be missing from the
+            # batch and swept as stale. Mark the company's run incomplete.
+            self.mark_source_failed(response, f"No detail for {listing.get('title', '?')}")
             return
 
         # Workday nests job data under jobPostingInfo

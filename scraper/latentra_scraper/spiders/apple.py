@@ -87,7 +87,10 @@ class AppleSpider(BaseJobSpider):
                 continue
             yield item
 
-        if results and page * PAGE_SIZE < total and page < self.MAX_PAGES:
+        if results and page * PAGE_SIZE < total:
+            if page >= self.MAX_PAGES:
+                self.mark_source_incomplete(response, f"paging cap at page {page} ({total} results)")
+                return
             yield self._search(source, token, page + 1)
 
     def row_to_item(self, row, source):

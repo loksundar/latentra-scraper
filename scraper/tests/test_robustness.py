@@ -138,13 +138,16 @@ def test_apple_missing_csrf_token_marks_failed_and_token_request_opts_out_of_jso
     assert not getattr(ok_spider, "companies_failed", set())
 
 
-def test_middleware_detail_failure_does_not_flag_listing():
+def test_middleware_detail_failure_flags_company_incomplete():
+    """Round 2: a lost detail means the listed job is missing from the batch,
+    and the server would sweep it as stale — so it flags the run incomplete
+    (partial=1) exactly like a lost listing page."""
     spider = SimpleNamespace(source_type="workday", logger=logging.getLogger("t"))
     source = src("workday")
     detail = Request("https://x/job/1", cb_kwargs={"source": source, "listing": {"title": "x"}})
     mark_failed(spider, detail)
     assert spider.companies_failed == {("workday", "acme")}
-    assert not getattr(spider, "companies_listing_failed", set())
+    assert spider.companies_listing_failed == {("workday", "acme")}
     page2 = Request("https://x/jobs", cb_kwargs={"source": source, "offset": 20})
     mark_failed(spider, page2)
     assert spider.companies_listing_failed == {("workday", "acme")}
@@ -358,11 +361,13 @@ def test_listing_failure_sends_company_batch_as_partial(monkeypatch):
                  ("workday", "clean"): [{"source_job_id": "3", "apply_url": ""}]}
     s = _spider()
     s.companies_failed = {("workday", "page2died"), ("workday", "detaildied")}
-    s.companies_listing_failed = {("workday", "page2died")}
+    # mark_failed() puts both kinds of failure here (round 2: a lost detail is
+    # an incomplete batch too — the server would sweep the listed job)
+    s.companies_listing_failed = {("workday", "page2died"), ("workday", "detaildied")}
     p.close_spider(s)
     by_slug = {b["company_slug"]: b for b in sent}
     assert by_slug["page2died"].get("partial") == 1           # no stale sweep on an incomplete listing
-    assert "partial" not in by_slug["detaildied"]             # one lost detail still sweeps normally
+    assert by_slug["detaildied"].get("partial") == 1          # nor on a lost detail
     assert "partial" not in by_slug["clean"]
     assert not [b for b in sent if b.get("heartbeat")]        # nothing to heartbeat here
 
