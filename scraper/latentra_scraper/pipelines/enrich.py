@@ -8,6 +8,7 @@ from latentra_scraper.enrichment.location import normalize_location
 from latentra_scraper.enrichment.platform_keywords import extract_platform_keywords
 from latentra_scraper.enrichment.seniority import infer_seniority
 from latentra_scraper.enrichment.quality import compute_quality
+from latentra_scraper.enrichment.salary import extract_salary
 
 
 class EnrichPipeline:
@@ -50,7 +51,18 @@ class EnrichPipeline:
             if loc["is_remote_friendly"]:
                 item["remote_type"] = "remote"
 
-        # 6. Quality scoring
+        # 6. Salary from the description when the ATS didn't supply one.
+        #    Never allowed to break the item: any error just leaves salary empty.
+        if not item.get("salary_min") and not item.get("salary_max"):
+            try:
+                found = extract_salary(desc)
+                if found:
+                    item["salary_min"], item["salary_max"] = found
+                    item["salary_currency"] = "USD"
+            except Exception:
+                pass
+
+        # 7. Quality scoring
         q = compute_quality(dict(item))
         item["quality_score"] = q["quality_score"]
         item["quality_flags"] = q["quality_flags"]
