@@ -70,6 +70,8 @@ class BaseJobSpider(scrapy.Spider):
 
     def handle_error(self, failure):
         request = failure.request
+        from latentra_scraper.middlewares import mark_failed
+        mark_failed(self, request)
         self.logger.error(f"Request failed: {request.url} — {failure.value}")
 
     # ── Listing prefilter ────────────────────────────

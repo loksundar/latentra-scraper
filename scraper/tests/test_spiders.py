@@ -236,3 +236,38 @@ class TestSmartRecruiters:
         assert "<h3>Job Description</h3>" in desc
         assert "Monitor and triage alerts" in desc
         assert "<h3>Qualifications</h3>" in desc
+
+
+class TestSmartRecruitersV2Shape:
+    """Late 2026 API: typeOfEmployment is {id,label}, jobAd is null in listings."""
+    LIST = "https://api.smartrecruiters.com/v1/companies/acme/postings?limit=100&offset=0&country=us"
+    DETAIL = "https://api.smartrecruiters.com/v1/companies/acme/postings/744000160326680"
+
+    def test_listing_never_crashes_and_requests_details_for_us_tech_only(self, source):
+        spider = SmartRecruitersSpider()
+        out = list(spider.parse_jobs(fake_response(self.LIST, load_fixture("smartrecruiters_v2_list.json")), source))
+        reqs = [o for o in out if hasattr(o, "callback")]
+        assert len(reqs) == 1                      # Canada + non tech title prefiltered
+        assert reqs[0].url.endswith("/postings/744000160326680")
+
+    def test_detail_builds_item(self, source):
+        spider = SmartRecruitersSpider()
+        listing = load_fixture("smartrecruiters_v2_list.json")
+        import json as _j
+        listing = _j.loads(listing)["content"][0] if isinstance(listing, (str, bytes)) else listing["content"][0]
+        items = list(spider.parse_detail(fake_response(self.DETAIL, load_fixture("smartrecruiters_v2_detail.json")), source, listing))
+        assert len(items) == 1
+        job = items[0]
+        assert job["employment_type"] == "full_time"
+        assert job["remote_type"] == "remote"
+        assert job["department"] == "Product"
+        assert job["apply_url"].startswith("https://jobs.smartrecruiters.com/Acme/744000160326680")
+        assert "<h3>Qualifications</h3>" in job["description_html"]
+
+    def test_garbage_fields_are_skipped_not_raised(self, source):
+        spider = SmartRecruitersSpider()
+        weird = [{"id": "1", "name": {"x": 1}, "location": "Austin", "typeOfEmployment": 5, "jobAd": {"sections": "nope"}, "department": []},
+                 {"id": "2", "name": "Data Engineer", "location": None, "typeOfEmployment": None, "jobAd": None}]
+        items = list(spider._parse_postings(weird, source))
+        assert all(i["source"] == "smartrecruiters" for i in items)
+        assert all(not i["apply_url"].startswith("https://api.") for i in items)

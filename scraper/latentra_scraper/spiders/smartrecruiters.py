@@ -1,19 +1,40 @@
 """
 SmartRecruiters ATS spider.
 
-SmartRecruiters provides a public API at:
-    GET https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=100&offset=0
+Public API:
+    GET https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=100&offset=0&country=us
+    GET https://api.smartrecruiters.com/v1/companies/{slug}/postings/{id}     (full job ad)
 
-Pagination: offset-based. Increment offset by limit until fewer results than limit.
-Each posting includes: id, name, location, department, typeOfEmployment,
-experienceLevel, jobAd (with description sections), releasedDate.
+The API shape drifts. Since late 2026 the listing returns `typeOfEmployment`
+and `experienceLevel` as {id, label} objects and `jobAd` as null, so the
+description has to come from the detail endpoint. Every field is read through
+`_label()` / `_dict()` so a str/dict/None swap can never crash the spider
+again: a bad posting is skipped and counted, the rest of the company still
+scrapes.
 """
 
-import json
 import scrapy
 from latentra_scraper.items import JobItem
 from latentra_scraper.sources.loader import get_active_sources
 from latentra_scraper.spiders.base_job_spider import BaseJobSpider
+
+API = "https://api.smartrecruiters.com/v1/companies"
+
+
+def _dict(value) -> dict:
+    return value if isinstance(value, dict) else {}
+
+
+def _label(value) -> str:
+    """Text from a field that may be a str, an {id,label} dict, or missing."""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        for key in ("label", "name", "id"):
+            v = value.get(key)
+            if isinstance(v, str) and v:
+                return v
+    return ""
 
 
 class SmartRecruitersSpider(BaseJobSpider):
@@ -22,147 +43,176 @@ class SmartRecruitersSpider(BaseJobSpider):
     allowed_domains = ["api.smartrecruiters.com"]
 
     PAGE_SIZE = 100
+    MAX_PAGES = 30          # 3,000 US postings per company is plenty
+
+    def _list_url(self, slug: str, offset: int) -> str:
+        return f"{API}/{slug}/postings?limit={self.PAGE_SIZE}&offset={offset}&country=us"
 
     def build_url(self, source):
-        slug = source["company_slug"]
-        base = source.get("base_url")
-        if base:
-            return base
-        return f"https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit={self.PAGE_SIZE}&offset=0"
+        return source.get("base_url") or self._list_url(source["company_slug"], 0)
 
     def start_requests(self):
-        """Override to handle pagination — build initial URLs for each source."""
         sources = get_active_sources(self.source_type)
         if not sources:
             self.logger.warning(f"No active sources for {self.source_type}")
             return
-
         for source in sources:
-            url = self.build_url(source)
             yield scrapy.Request(
-                url,
+                self.build_url(source),
                 callback=self.parse,
+                errback=self.handle_error,
                 cb_kwargs={"source": source, "offset": 0},
                 dont_filter=True,
             )
 
     def parse(self, response, source, offset=0):
-        """Handle pagination and delegate to parse_jobs."""
-        import scrapy
-
         data = self.safe_json_parse(response.text)
-        if not data:
+        if not isinstance(data, dict):
             self.logger.error(f"[{source['company_slug']}] Invalid JSON response")
             return
+        content = data.get("content") or []
+        if not isinstance(content, list):
+            content = []
+        slug = source["company_slug"]
+        self.logger.info(f"[{slug}] offset={offset}, got {len(content)} postings (total: {data.get('totalFound')})")
 
-        content = data.get("content", [])
-        company_slug = source["company_slug"]
-        total = data.get("totalFound", len(content))
-        self.logger.info(f"[{company_slug}] Page offset={offset}, got {len(content)} postings (total: {total})")
+        yield from self._handle_postings(content, source)
 
-        for item in self._parse_postings(content, source):
-            yield item
-
-        # Paginate if there are more results
-        if len(content) >= self.PAGE_SIZE:
-            next_offset = offset + self.PAGE_SIZE
-            slug = source["company_slug"]
-            next_url = f"https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit={self.PAGE_SIZE}&offset={next_offset}"
+        next_offset = offset + self.PAGE_SIZE
+        if len(content) >= self.PAGE_SIZE and next_offset < self.PAGE_SIZE * self.MAX_PAGES:
             yield scrapy.Request(
-                next_url,
+                self._list_url(slug, next_offset),
                 callback=self.parse,
+                errback=self.handle_error,
                 cb_kwargs={"source": source, "offset": next_offset},
                 dont_filter=True,
             )
 
     def parse_jobs(self, response, source):
-        """Called by base class — but we override parse() for pagination."""
+        """Listing → items (old shape) or detail requests (new shape)."""
         data = self.safe_json_parse(response.text)
-        if not data:
-            return
-        content = data.get("content", [])
-        yield from self._parse_postings(content, source)
+        content = (data.get("content") or []) if isinstance(data, dict) else []
+        yield from self._handle_postings(content, source)
 
-    def _parse_postings(self, postings, source):
-        """Parse a list of SmartRecruiters posting objects into JobItems."""
-        company_slug = source["company_slug"]
-        company_name = self.company_display_name(source)
-
+    def _handle_postings(self, postings, source):
+        slug = source["company_slug"]
         for posting in postings:
-            posting_id = posting.get("id", "")
-            if not posting_id:
+            if not isinstance(posting, dict) or not posting.get("id"):
                 continue
-
-            # Location
-            loc = posting.get("location", {})
-            city = loc.get("city", "")
-            country = loc.get("country", "")
-            region = loc.get("region", "")
-            location_parts = [p for p in [city, region, country] if p]
-            location_str = ", ".join(location_parts) if location_parts else None
-
-            # Remote type
-            remote_status = (loc.get("remote") or False)
-            if remote_status is True:
-                remote_type = "remote"
+            loc = _dict(posting.get("location"))
+            if self.skip_from_listing(_label(posting.get("name")),
+                                      loc.get("fullLocation") or self._location(loc) or "",
+                                      _label(loc.get("country"))):
+                self.count_prefiltered()
+                continue
+            if _dict(_dict(posting.get("jobAd")).get("sections")):
+                item = self._safe_build(posting, source)
+                if item:
+                    yield item
             else:
-                remote_type = "unknown"
+                yield scrapy.Request(
+                    f"{API}/{slug}/postings/{posting['id']}",
+                    callback=self.parse_detail,
+                    errback=self.handle_error,
+                    cb_kwargs={"source": source, "listing": posting},
+                    dont_filter=True,
+                )
 
-            # Employment type
-            emp_raw = (posting.get("typeOfEmployment") or "").lower()
-            if "full" in emp_raw:
-                employment_type = "full_time"
-            elif "part" in emp_raw:
-                employment_type = "part_time"
-            elif "contract" in emp_raw or "freelance" in emp_raw:
-                employment_type = "contract"
-            elif "intern" in emp_raw:
-                employment_type = "intern"
-            else:
-                employment_type = "unknown"
+    def parse_detail(self, response, source, listing=None):
+        detail = self.safe_json_parse(response.text)
+        posting = dict(listing or {})
+        if isinstance(detail, dict):
+            posting.update({k: v for k, v in detail.items() if v not in (None, "", {}, [])})
+        item = self._safe_build(posting, source)
+        if item:
+            yield item
 
-            # Description — combine sections from jobAd
-            description_html = ""
-            job_ad = posting.get("jobAd", {})
-            sections = job_ad.get("sections", {})
-            for section_key in ["jobDescription", "qualifications", "additionalInformation", "companyDescription"]:
-                section = sections.get(section_key, {})
-                text = section.get("text", "")
-                if text:
-                    title = section.get("title", "")
-                    if title:
-                        description_html += f"<h3>{title}</h3>"
-                    description_html += text
+    def _safe_build(self, posting, source):
+        try:
+            return self._build_item(posting, source)
+        except Exception as e:  # one odd posting must never sink the company
+            self.logger.warning(f"[{source.get('company_slug')}] skipped posting {posting.get('id')}: {e!r}")
+            if getattr(self, "crawler", None):
+                self.crawler.stats.inc_value("smartrecruiters/posting_errors")
+            return None
 
-            # Department
-            dept = posting.get("department", {})
-            department = dept.get("label") if isinstance(dept, dict) else None
+    # Kept for callers/tests that pass a plain list of postings.
+    def _parse_postings(self, postings, source):
+        for posting in postings or []:
+            if isinstance(posting, dict) and posting.get("id"):
+                item = self._safe_build(posting, source)
+                if item:
+                    yield item
 
-            # Apply URL
-            apply_url = f"https://jobs.smartrecruiters.com/{company_slug}/{posting_id}"
-            ref = posting.get("ref")
-            if ref:
-                apply_url = ref
+    @staticmethod
+    def _location(loc: dict):
+        parts = [_label(loc.get(k)) for k in ("city", "region", "country")]
+        parts = [p for p in parts if p]
+        return ", ".join(parts) if parts else None
 
-            # Posted date
-            released = posting.get("releasedDate", "")
+    @staticmethod
+    def _employment(posting) -> str:
+        emp = _dict(posting.get("typeOfEmployment"))
+        raw = " ".join([_label(posting.get("typeOfEmployment")), str(emp.get("id") or "")]).lower()
+        if "intern" in raw:
+            return "intern"
+        if "part" in raw:
+            return "part_time"
+        if "contract" in raw or "freelance" in raw or "temporary" in raw:
+            return "contract"
+        if "full" in raw or "permanent" in raw:
+            return "full_time"
+        return "unknown"
 
-            yield JobItem(
-                source="smartrecruiters",
-                source_job_id=str(posting_id),
-                title=self.safe_text(posting.get("name")),
-                company=company_name,
-                company_slug=company_slug,
-                department=department,
-                seniority="unknown",
-                location=location_str,
-                remote_type=remote_type,
-                employment_type=employment_type,
-                salary_min=None,
-                salary_max=None,
-                salary_currency=None,
-                description_html=description_html,
-                tags=None,
-                apply_url=apply_url,
-                posted_at=self.safe_datetime_iso(released) if released else None,
-            )
+    def _build_item(self, posting, source):
+        slug = source["company_slug"]
+        posting_id = str(posting["id"])
+        loc = _dict(posting.get("location"))
+
+        if loc.get("remote") is True:
+            remote_type = "remote"
+        elif loc.get("hybrid") is True:
+            remote_type = "hybrid"
+        elif loc:
+            remote_type = "onsite"
+        else:
+            remote_type = "unknown"
+
+        description_html = ""
+        sections = _dict(_dict(posting.get("jobAd")).get("sections"))
+        for key in ("jobDescription", "qualifications", "additionalInformation", "companyDescription"):
+            section = _dict(sections.get(key))
+            text = section.get("text")
+            if isinstance(text, str) and text:
+                title = _label(section.get("title"))
+                if title:
+                    description_html += f"<h3>{title}</h3>"
+                description_html += text
+
+        # Apply link: the public job page. `ref` is now an API URL, never send users there.
+        apply_url = f"https://jobs.smartrecruiters.com/{slug}/{posting_id}"
+        for cand in (posting.get("postingUrl"), posting.get("ref")):
+            if isinstance(cand, str) and cand.startswith("https://jobs.smartrecruiters.com/"):
+                apply_url = cand
+                break
+
+        released = posting.get("releasedDate")
+        return JobItem(
+            source="smartrecruiters",
+            source_job_id=posting_id,
+            title=self.safe_text(_label(posting.get("name"))),
+            company=self.company_display_name(source),
+            company_slug=slug,
+            department=_label(posting.get("department")) or None,
+            seniority="unknown",       # EnrichPipeline infers it from title + description
+            location=self._location(loc),
+            remote_type=remote_type,
+            employment_type=self._employment(posting),
+            salary_min=None,
+            salary_max=None,
+            salary_currency=None,
+            description_html=description_html,
+            tags=None,
+            apply_url=apply_url,
+            posted_at=self.safe_datetime_iso(released) if isinstance(released, str) and released else None,
+        )

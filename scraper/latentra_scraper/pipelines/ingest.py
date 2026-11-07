@@ -225,6 +225,35 @@ class IngestPipeline:
                 total_updated += upd
                 total_deleted += deleted
 
+        # Heartbeats: companies whose ATS answered cleanly but had 0 US tech
+        # jobs this run. An empty batch tells the server the source is healthy
+        # (sets last_success_at) and lets its normal anomaly + sweep rules
+        # handle jobs that disappeared. Never sent for a company with any
+        # failure this run, nor once the WAF breaker is open.
+        reached = set(getattr(spider, "companies_reached", set()) or set())
+        failed = set(getattr(spider, "companies_failed", set()) or set())
+        heartbeat = sorted(reached - failed - set(self.batches.keys()))
+        sent_hb = 0
+        for source, company_slug in heartbeat:
+            if self._waf_blocked():
+                break
+            payload = {
+                "source": source, "company_slug": company_slug, "jobs": [],
+                "dead_source_job_ids": [], "heartbeat": 1,
+                "validation_failures": validation_failures,
+                "validation_warnings": validation_warnings,
+                "runtime_seconds": runtime,
+            }
+            if timed_out:
+                payload["partial"] = 1
+            data, status = self._post_batch(spider, company_slug, payload, 2)
+            if status == 200:
+                sent_hb += 1
+            else:
+                spider.logger.warning(f"[{company_slug}] heartbeat not recorded (HTTP {status})")
+        if heartbeat:
+            spider.logger.info(f"Heartbeats: {sent_hb}/{len(heartbeat)} zero-job companies marked healthy")
+
         spider.logger.info(
             f"Ingest totals: {total_inserted} inserted, {total_updated} updated, "
             f"{total_deleted} deleted"

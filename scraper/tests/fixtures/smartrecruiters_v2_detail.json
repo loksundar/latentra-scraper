@@ -1,0 +1,6 @@
+{"id":"744000160326680","name":"Forward Deployed Engineer, Applied AI","releasedDate":"2026-11-07T01:28:23.332Z",
+ "postingUrl":"https://jobs.smartrecruiters.com/Acme/744000160326680-forward-deployed-engineer",
+ "location":{"city":"Atlanta","region":"Georgia","country":"us","remote":true,"hybrid":false},
+ "typeOfEmployment":{"id":"permanent","label":"Full-time"},"department":{"id":"2294174","label":"Product"},
+ "jobAd":{"sections":{"jobDescription":{"title":"Job Description","text":"<p>Build agents with customers.</p>"},
+                      "qualifications":{"title":"Qualifications","text":"<p>Python, LLMs.</p>"}}}}

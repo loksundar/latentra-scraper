@@ -29,6 +29,11 @@ RETRY_ENABLED = True
 RETRY_TIMES = 2
 RETRY_HTTP_CODES = [429, 500, 502, 503, 504]
 
+# Tracks companies checked cleanly (0 jobs is still a success).
+SPIDER_MIDDLEWARES = {
+    "latentra_scraper.middlewares.CompanyReachMiddleware": 950,
+}
+
 # ── Pipeline order ──────────────────────────────────
 # Validate → Normalize → Enrich → Ingest → Export
 ITEM_PIPELINES = {
