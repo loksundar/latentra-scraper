@@ -80,6 +80,14 @@ def _activation_limits() -> dict:
 _failures: list[str] = []
 
 
+def _summary(line: str) -> None:
+    """Append a line to the GitHub Actions job summary (no-op locally)."""
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if path:
+        with open(path, "a") as f:
+            f.write(line + "\n\n")
+
+
 def activate_backlog() -> None:
     """Promote validated discovered_sources into job_sources, capped per type."""
     discover_url = os.environ.get("DISCOVER_URL", "").rstrip("/") or (
@@ -98,8 +106,20 @@ def activate_backlog() -> None:
             headers={"Authorization": f"Bearer {token}", "User-Agent": _UA},
             timeout=120,
         )
+        if resp.status_code == 400 and "No IDs" in resp.text:
+            # Server still runs the pre-bulk jobs-discover.php (ids-only PUT).
+            msg = ("activation: server jobs-discover.php is outdated - upload "
+                   "website/api/jobs-discover.php to public_html/api/ on Hostinger")
+            _summary("**Action needed:** validated companies are queued but can't be "
+                     "activated until `website/api/jobs-discover.php` is uploaded to "
+                     "`public_html/api/` on Hostinger.")
+            logger.error(msg)
+            _failures.append(msg)
+            return
         resp.raise_for_status()
         result = resp.json()
+        _summary(f"Activated **{result.get('activated', 0)}** sources: "
+                 f"`{result.get('by_type', {})}` - still queued: `{result.get('remaining', {})}`")
         logger.info(
             f"Activated: {result.get('activated', 0)} sources "
             f"{result.get('by_type', {})}; still queued: {result.get('remaining', {})}"
