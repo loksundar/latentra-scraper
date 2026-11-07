@@ -80,11 +80,14 @@ def extract_platform_keywords(description_text: str) -> dict:
         if total > 0:
             counts[name] = total
 
-    # Determine primary cloud platforms (cloud providers with 1+ mentions)
+    # Determine primary cloud platforms (cloud providers with 1+ mentions).
+    # Ties are broken by name: CLOUD_PROVIDERS is a set, so with the count
+    # alone the order followed the process's string-hash seed and the same
+    # description produced ["AWS","Azure"] in one run and ["Azure","AWS"] in
+    # the next — every row re-marked as updated on each crawl.
     primary_clouds = sorted(
         [name for name in CLOUD_PROVIDERS if counts.get(name, 0) > 0],
-        key=lambda n: counts[n],
-        reverse=True,
+        key=lambda n: (-counts[n], n),
     )
 
     # Multi-cloud: 2+ cloud providers each mentioned 2+ times

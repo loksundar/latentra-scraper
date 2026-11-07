@@ -106,13 +106,17 @@ IT_TITLE_PATTERNS = re.compile(
     r'machine\s*learning|deep\s*learning|ai\b|ml\b|llm\b|nlp\b|'
     r'cloud|aws|azure|gcp|kubernetes|docker|terraform|'
     r'full\s*stack|front\s*end|back\s*end|frontend|backend|fullstack|'
-    r'product\s*(manager|owner|design)|program\s*manager|'
+    # The group's closing \b follows every alternative, so a bare stem can
+    # never match a longer word: "product design" did not match "Product
+    # Designer" and "Product Designer, Payroll" was dropped as a payroll job.
+    r'product\s*(manager|owner|design\w*)|program\s*manager|'
+    r'(?:ux|ui|interaction)\s*design\w*|design\s*(?:systems?|technologist)|'
     r'ux\b|ui\b|user\s*experience|user\s*interface|'
     r'cyber|security\s*(engineer|analyst|architect)|infosec|'
     r'database|dba\b|sql\b|etl\b|data\s*warehouse|'
-    r'network\s*(engineer|architect|admin)|sysadmin|system\s*admin|'
-    r'it\s*(manager|director|specialist|support|admin)|'
-    r'help\s*desk|technical\s*support|desktop\s*support|'
+    r'network\s*(engineer|architect|admin\w*)|sysadmin|system\s*admin\w*|'
+    r'it\s*(manager|director|specialist|support|admin\w*|operations|ops|analyst|technician|generalist|coordinator|helpdesk)|'
+    r'help\s*desk|technical\s*(?:\w+\s+)?support|desktop\s*support|'
     r'scrum|agile|devsecops|platform\s*engineer|'
     r'qa\b|quality\s*assurance|test\s*(engineer|automation)|sdet\b|'
     r'business\s*(analyst|intelligence)|bi\b|analytics|'
@@ -130,8 +134,15 @@ IT_TITLE_PATTERNS = re.compile(
     r'systems?\s*(analyst|engineer|administrator|admin|architect|integrator)|'
     r'technical\s*account|member\s*of\s*technical\s*staff|mts\b|'
     r'research\s*(scientist|engineer)|applied\s*scientist|data\s*science|'
+    # Amazon "Applied Science Internship - ..., PhD Student Science Recruiting"
+    r'(?:applied|research|computer|data|decision)\s*scien\w*|'
     r'hris\b|workday|servicenow|netsuite|'
-    r'solutions?\s*(engineer|architect|consultant)'
+    r'solutions?\s*(engineer|architect|consultant)|'
+    # Business-function technology teams (HR Tech, Finance Systems, Data &
+    # Technology, Data Products) and data-center work are IT roles.
+    r'(?:hr|people|finance|accounting|marketing|sales|revenue|gtm|legal|recruiting|business|payroll|tax)'
+    r'\s*(?:technology|tech|systems?|tooling|automation)|'
+    r'data\s*(?:&|and)\s*technology|data\s*products?|data\s*cent(?:er|re)s?'
     r')\b',
     re.IGNORECASE
 )
@@ -183,19 +194,38 @@ NON_US_SIGNALS = [
     'chile', 'santiago', 'uruguay', 'montevideo', 'ecuador', 'costa rica', 'san josé, costa rica',
     'emea', 'apac', 'latam', 'dach', 'benelux', 'nordics',
     'djibouti', 'iceland', 'malta', 'cyprus',
+    'british columbia', 'nova scotia', 'saskatchewan', 'manitoba',
 ]
 
 # Short names that are substrings of US places ("Milwaukee", "Indian Wells",
 # "Brigantine", "Romania") — matched as whole words only.
-_NON_US_WORDS = re.compile(r'\b(?:uk|u\.k\.|india|oman|peru|jordan|anz|riga|porto|cork|lyon|rome)\b', re.I)
+_NON_US_WORDS = ['uk', 'u.k.', 'india', 'oman', 'peru', 'jordan', 'anz', 'riga', 'porto', 'cork', 'lyon', 'rome']
+
+# Every non-US name is matched as a whole word (never a substring): "New
+# England", "St. Tammany Parish" (paris), "Londonderry" and "Dachshund Lane"
+# (dach) were being dropped as foreign. Multi-word names keep their spaces.
+_NON_US_RE = re.compile(
+    r'(?<![\w])(?:' + '|'.join(re.escape(s) for s in sorted(NON_US_SIGNALS + _NON_US_WORDS, key=len, reverse=True)) + r')(?![\w])',
+    re.IGNORECASE,
+)
+
+# Positive US signals as whole words. "US & Canada", "Remote (US or Canada)",
+# "US/Canada" and "New England" are US-eligible postings and used to fall
+# through to the Canada / England checks.
+_US_WORDS = re.compile(
+    r'(?<![\w])(?:us|u\.s\.a?\.?|u\.s|usa|united states|new england|puerto rico|'
+    r'washington,?\s*d\.?c\.?|nyc|sf bay area)(?![\w])',
+    re.IGNORECASE,
+)
 
 # Upper-case ISO alpha-2/alpha-3 codes that are not US state codes and not
 # compass points / English words seen in street addresses (SE, NO, IT, AT...).
+# A digit on either side is not a code boundary: "4TH FLOOR" is not Thailand.
 _NON_US_ISO_CODES = re.compile(
-    r'(?<![A-Za-z])(?:'
+    r'(?<![A-Za-z0-9])(?:'
     r'IE|AU|GB|FR|NL|ES|JP|SG|BR|MX|CH|PL|PT|NZ|ZA|AE|KR|CN|HK|TW|BE|DK|FI|CZ|RO|EG|NG|KE|PH|VN|TH|UA|'
     r'DEU|GBR|FRA|CAN|CAD|AUS|IND|NLD|IRL|ESP|ITA|CHE|SWE|NOR|DNK|FIN|POL|BEL|AUT|PRT|CZE|ROU|HUN|GRC|TUR|ISR|ARE|SGP|JPN|KOR|CHN|TWN|HKG|MEX|BRA|ARG|COL|CHL|PER|NZL|ZAF|EGY|NGA|KEN|PHL|VNM|THA|MYS|IDN|PAK|BGD|LKA|UKR'
-    r')(?![A-Za-z])'
+    r')(?![A-Za-z0-9])'
 )
 
 # Max age for jobs — drop anything older than this
@@ -293,6 +323,8 @@ class ValidatePipeline:
         for sig in us_signals:
             if sig in loc_lower:
                 return True
+        if _US_WORDS.search(location):
+            return True
 
         # Check for US state abbreviations (", XX" pattern)
         us_state_abbrevs = {
@@ -319,8 +351,9 @@ class ValidatePipeline:
             'tennessee','texas','utah','vermont','virginia','washington',
             'west virginia','wisconsin','wyoming','district of columbia'
         ]
+        # Whole words only: "Cambridgeshire, England" is not Cambridge, MA.
         for state in us_states:
-            if state in loc_lower:
+            if re.search(r'(?<![\w])' + re.escape(state) + r'(?![\w])', loc_lower):
                 return True
 
         # Major US cities (no state needed)
@@ -336,10 +369,11 @@ class ValidatePipeline:
             'redmond','menlo park','santa clara','irvine','plano',
             'arlington','bellevue','ann arbor','durham','chapel hill',
             'cambridge','somerville','fort worth','fort meade',
-            'fort bragg','fort liberty','huntsville'
+            'fort bragg','fort liberty','huntsville',
+            'west jordan','south jordan',   # Utah; "Jordan" alone is the country
         ]
         for city in us_cities:
-            if city in loc_lower:
+            if re.search(r'(?<![\w])' + re.escape(city) + r'(?![\w])', loc_lower):
                 return True
 
         # Canadian province codes after a comma ("Markham, ON", "Vancouver, BC")
@@ -359,10 +393,7 @@ class ValidatePipeline:
         # the generic "remote" allowance: "Remote - United Kingdom", "Belgium -
         # Remote", "UAE - Remote" and "Oslo - Remote" were all being kept
         # because the remote branch returned first.
-        for sig in NON_US_SIGNALS:
-            if sig in loc_lower:
-                return False
-        if _NON_US_WORDS.search(loc_lower):
+        if _NON_US_RE.search(location):
             return False
 
         # "Remote" with no country qualifier = allow through (likely US)
