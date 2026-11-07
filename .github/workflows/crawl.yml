@@ -166,10 +166,10 @@ jobs:
           # SmartRecruiters turning a text field into an object in Nov 2026,
           # which silently zeroed 50 companies). Fail the run so it shows red
           # and GitHub emails, instead of waiting for STALE alerts.
-          EXC=$(grep -oE "'spider_exceptions/count': [0-9]+" crawl.log | grep -oE "[0-9]+$" | tail -1)
+          EXC=$(grep -oE "'spider_exceptions/count': [0-9]+" crawl.log | grep -oE "[0-9]+$" | tail -1 || true)
           if [ "${EXC:-0}" -ge 5 ]; then
             echo "::error::${{ matrix.spider }} callbacks raised ${EXC} exceptions, the ATS response format probably changed"
-            grep -oE "spider_exceptions/[A-Za-z]+': [0-9]+" crawl.log | sort -u
+            grep -oE "spider_exceptions/[A-Za-z]+': [0-9]+" crawl.log | sort -u || true
             grep -m3 -E "^[A-Za-z]+Error: " crawl.log || true
             exit 1
           fi
