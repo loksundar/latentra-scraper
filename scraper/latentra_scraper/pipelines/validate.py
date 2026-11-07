@@ -342,6 +342,8 @@ IT_TITLE_PATTERNS = re.compile(
     r'coder|coding|sysadmin|dba|sre|devops|dev\s*ops|devsecops|secops|sec\s*ops|mlops|ml\s*ops|dataops|'
     r'data\s*ops|aiops|finops|gitops|noc|sdes?|swes?|sdm|seit|cyber\w*|eng|engr|engrs|is&t|'
     r'evaluation\s*scien\w*|'
+    # Business analysts are a core role family for the board; "Product Mgmt - Tech" is Amazon's technical PM
+    r'business\s*analys\w*|product\s*(?:mgmt|management)\s*[-–—]\s*tech\b|'
     r'systems?\s*development|'
     r'agent\s*(?:development|engineer\w*|platform|infrastructure|architecture|builder|ops|operations|evaluation|'
     r'quality|systems?|framework\w*|tooling)|'
@@ -666,6 +668,9 @@ def _title_head(title: str) -> str:
     return _TITLE_HEAD_SPLIT.split(title, 1)[0]
 
 
+_BUSINESS_ANALYST = re.compile(r'\bbusiness\s*analysts?\b', re.IGNORECASE)
+
+
 def is_non_it_title(title) -> bool:
     """True when the title should be dropped as a non-technical role."""
     if not isinstance(title, str) or not title.strip():
@@ -680,6 +685,11 @@ def is_non_it_title(title) -> bool:
     #    Manager" drops; "Finance Program Manager, Analytics & Reporting" stays).
     if CONTEXT_NON_IT_TITLE_PATTERNS.search(head):
         return not STRONG_DATA_TITLE_PATTERNS.search(title)
+    # 2b. Business analysts are a core role family: the department they serve
+    #     ("..., Talent Acquisition", "CRM ..., Sales Enablement") never sinks them.
+    #     A non-technical head already dropped above ("Business Analyst Recruiting Manager").
+    if _BUSINESS_ANALYST.search(title):
+        return False
     # 3. A technical role at the head cannot be sunk by a department word in
     #    the tail. A bare "Analyst" head says nothing about the function, so
     #    the tail decides ("Analyst, Finance" drops, "Analyst, Data Platform"

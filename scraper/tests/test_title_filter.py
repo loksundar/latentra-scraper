@@ -364,3 +364,15 @@ class TestPipelineAndSpiderUseTheSameRule:
         assert spider.skip_from_listing("Recruiter, Engineering", "Austin, TX")
         assert not spider.skip_from_listing("Data Engineer, Sales", "Austin, TX")
         assert not spider.skip_from_listing("Sales Engineer", "Austin, TX")
+
+
+@pytest.mark.parametrize("title,dropped", [
+    ("Senior Specialist, CRM Business Analyst, Sales Enablement", False),
+    ("Senior Business Analyst - Business Analysis for Talent Acquisition", False),
+    ("Principal, Product Mgmt - Tech, Amazon Fulfillment Technologies (AFT)", False),
+    ("Business Analyst Recruiting Manager- S&G", True),
+    ("Business Analyst, Finance Systems", False),
+])
+def test_business_analyst_family_live_crawl(title, dropped):
+    """Found on the first live crawl with the new filter (2026-11-07)."""
+    assert is_non_it_title(title) is dropped
