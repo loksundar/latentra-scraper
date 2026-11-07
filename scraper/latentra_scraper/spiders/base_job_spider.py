@@ -138,14 +138,10 @@ class BaseJobSpider(scrapy.Spider):
     # first and skip details that would be dropped anyway.
 
     def skip_from_listing(self, title: str, location: str = "", country: str = "") -> bool:
-        from latentra_scraper.pipelines.validate import (
-            IT_TITLE_PATTERNS,
-            NON_IT_TITLE_PATTERNS,
-            ValidatePipeline,
-        )
+        from latentra_scraper.pipelines.validate import ValidatePipeline, is_non_it_title
         title = title if isinstance(title, str) else ""
         location = location if isinstance(location, str) else ""
-        if NON_IT_TITLE_PATTERNS.search(title) and not IT_TITLE_PATTERNS.search(title):
+        if is_non_it_title(title):
             return True
         if self.is_non_us_country(country):
             return True
