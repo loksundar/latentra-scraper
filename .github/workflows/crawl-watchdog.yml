@@ -10,8 +10,8 @@
 name: Crawl watchdog
 
 on:
-  schedule:
-    - cron: "23 * * * *"   # every hour at :23 (off the busy top of the hour)
+  # Schedule removed 2026-11-16: Hostinger's cron (api/cron-trigger-crawl.php)
+  # is now the only scheduler. Kept for a manual "start a crawl if overdue".
   workflow_dispatch: {}
 
 permissions:

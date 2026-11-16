@@ -5,8 +5,8 @@
 name: Weekly source discovery
 
 on:
-  schedule:
-    - cron: "0 7 * * 1"   # Mondays 07:00 UTC
+  # No `schedule:`: Hostinger's cron (api/cron-trigger-discover.php on the
+  # site) starts this via the API on Mondays at 1 AM Central.
   workflow_dispatch: {}
 
 jobs:
